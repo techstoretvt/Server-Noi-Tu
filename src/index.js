@@ -29,13 +29,15 @@ const io = new Server(server, {
 //View engine
 configViewEngine(app);
 
-app.use(
-    cors({
-        // exposedHeaders: ['authorization'],
-        credentials: true,
-        origin: [process.env.LINK_FONTEND, process.env.LINK_ADMIN, "https://noitu.pro"],
-    })
-);
+// app.use(
+//     cors({
+//         // exposedHeaders: ['authorization'],
+//         credentials: true,
+//         origin: [process.env.LINK_FONTEND, process.env.LINK_ADMIN, "https://noitu.pro"],
+//     })
+// );
+
+app.use(cors());
 
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));

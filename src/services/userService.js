@@ -8252,6 +8252,7 @@ const timTuGoiY = (data) => {
                 });
             } else {
                 data.tuBatDau = data.tuBatDau.toLowerCase()
+                data.listWord = data.listWord ?? []
 
                 let [tuBD, created] = await db.TuBatDaus.findOrCreate({
                     where: {
@@ -8323,6 +8324,53 @@ const timTuGoiY = (data) => {
                 return resolve({
                     errCode: 1,
                     mess: "not found"
+                });
+
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const xoaTu = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.tuBatDau || !data.tuKetThuc) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameter!",
+                    data,
+                });
+            } else {
+                data.tuBatDau = data.tuBatDau.toLowerCase()
+                data.tuKetThuc = data.tuKetThuc.toLowerCase()
+
+                let [tuBD, created] = await db.TuBatDaus.findOrCreate({
+                    where: {
+                        label: data.tuBatDau
+                    },
+                    defaults: {
+                        id: uuidv4()
+                    },
+                });
+
+
+                let tuDie = await db.TuKetThucs.findOne({
+                    where: {
+                        idTuBatDau: tuBD.id,
+                        label: data.tuKetThuc
+                    },
+                    raw: false
+                });
+
+                if (tuDie)
+                    await tuDie.destroy();
+
+
+                return resolve({
+                    errCode: 0,
+                    mess: "success"
                 });
 
             }
@@ -8457,5 +8505,6 @@ module.exports = {
     themTuThuong,
     themTuDie,
     themTraLoi,
-    timTuGoiY
+    timTuGoiY,
+    xoaTu
 };

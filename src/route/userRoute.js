@@ -626,6 +626,11 @@ const initUserRoute = (app) => {
         userController.themTraLoi
     );
 
+    router.post(
+        "/xoa-tu",
+        userController.xoaTu
+    );
+
     router.get(
         "/tim-tu-goi-y",
         userController.timTuGoiY

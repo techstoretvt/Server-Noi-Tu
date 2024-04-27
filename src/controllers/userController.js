@@ -1481,6 +1481,17 @@ const timTuGoiY = async (req, res, next) => {
     }
 };
 
+const xoaTu = async (req, res, next) => {
+    try {
+        //call service data
+        let data = await userService.xoaTu(req.body);
+
+        return res.status(200).json(data);
+    } catch (e) {
+        next(e);
+    }
+};
+
 
 
 module.exports = {
@@ -1609,5 +1620,6 @@ module.exports = {
     themTuThuong,
     themTuDie,
     themTraLoi,
-    timTuGoiY
+    timTuGoiY,
+    xoaTu
 };

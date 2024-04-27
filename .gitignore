@@ -1,0 +1,7 @@
+/node_modules
+/vendor
+/.idea
+.idea/
+.env
+/src/public/videoTam/*.mp4
+/build

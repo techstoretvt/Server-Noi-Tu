@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <!-- <button id="start-btn">Bắt đầu</button> -->
+    <div id="output"></div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const outputDiv = document.getElementById('output');
+        const recognition = new webkitSpeechRecognition() || SpeechRecognition();
+
+        recognition.lang = 'vi-VN';
+        recognition.interimResults = true;
+
+        // startBtn.addEventListener('click', () => {
+        //     recognition.start();
+        // });
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+            const transcript = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join('').toLowerCase();
+            outputDiv.textContent = transcript;
+
+            switch (transcript) {
+                case "chuyển bài.":
+                    console.log("Chuyển bài");
+
+                    const res = fetch('/', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'next'
+                        })
+                    });
+
+
+                    break;
+                case "quay lại.":
+                    console.log("Quay lại");
+                    break;
+                case "dừng lại.":
+                    console.log("Dừng lại");
+                    break;
+                case "tiếp tục.":
+                    console.log("Tiếp tục");
+                    break;
+            }
+
+        };
+
+        recognition.onend = () => {
+            recognition.start();
+        };
+
+        recognition.onerror = (event) => {
+            outputDiv.textContent = 'Có lỗi xảy ra: ' + event.error;
+        };
+    </script>
+
+</body>
+
+</html>

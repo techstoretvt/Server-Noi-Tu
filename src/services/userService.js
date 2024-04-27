@@ -8266,7 +8266,10 @@ const timTuGoiY = (data) => {
                 let tuDie = await db.TuKetThucs.findOne({
                     where: {
                         idTuBatDau: tuBD.id,
-                        type: 'die'
+                        type: 'die',
+                        label: {
+                            [Op.notIn]: data.listWord
+                        }
                     },
                     order: [['stt', 'desc']],
                 });
@@ -8282,7 +8285,10 @@ const timTuGoiY = (data) => {
                 let tuNormal = await db.TuKetThucs.findOne({
                     where: {
                         idTuBatDau: tuBD.id,
-                        type: 'normal'
+                        type: 'normal',
+                        label: {
+                            [Op.notIn]: data.listWord
+                        }
                     },
                     order: [['stt', 'desc']],
                 });
@@ -8299,6 +8305,9 @@ const timTuGoiY = (data) => {
                     where: {
                         idTuBatDau: tuBD.id,
                         type: 'warning',
+                        label: {
+                            [Op.notIn]: data.listWord
+                        }
                     },
                     order: [['stt', 'desc']],
                 });

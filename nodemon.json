@@ -1,0 +1,12 @@
+{
+    "delay": 3,
+    "watch": [
+        "config/.env.development",
+        "./src/*"
+    ],
+    "ignore": [
+        "*.json",
+        "tests"
+    ],
+    "ext": "js"
+}

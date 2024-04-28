@@ -67,6 +67,8 @@ app.use((err, req, res, next) => {
         status: err.status || 500,
         errCode: -1,
         errMessage: err.message,
+        url: req.url,
+        position: err.position
     });
     res.status(200).json({
         status: err.status || 500,

@@ -20,6 +20,7 @@ import { handleEmit } from "../index";
 import Fuse from "fuse.js";
 import { dataflow } from "googleapis/build/src/apis/dataflow";
 const createError = require("http-errors");
+import contentJson from '../services/content-json.json'
 var cloudinary = require("cloudinary");
 // await cloudinary.v2.uploader.destroy('vznd4hds4kudr0zbvfop')
 cloudinary.config({
@@ -8320,6 +8321,19 @@ const timTuGoiY = (data) => {
                         type: tuWarning.type
                     });
                 }
+
+
+                for (let i = 0; i < contentJson.length; i++) {
+                    if (contentJson[i].split(' ')[0] === data.tuBatDau) {
+                        return resolve({
+                            errCode: 1,
+                            data: contentJson[i].split(' ')[1],
+                            type: "tuDien"
+                        });
+                    }
+                }
+
+
 
                 return resolve({
                     errCode: 1,

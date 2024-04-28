@@ -12,6 +12,8 @@ import cloudinary_shortvideo from '../utils/cloudinary/cloudinary_shortvideo';
 import cloudinary_shortvideo_video from '../utils/cloudinary/cloudinary_shortvideo_video';
 import cloudinary_avatar from '../utils/cloudinary/cloudinary_avatar';
 
+
+
 let router = express.Router();
 
 let appRoot = require('app-root-path');
@@ -35,8 +37,9 @@ let upload = multer({
 
 const initUserRoute = (app) => {
     //user api
-    router.get('/', (req, res) =>
+    router.get('/', (req, res) => {
         res.send('Hello backend')
+    }
     );
     router.get('/cancel', (req, res) =>
         res.send('Cancelled (Đơn hàng đã hủy)')

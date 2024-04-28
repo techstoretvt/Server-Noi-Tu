@@ -8337,6 +8337,7 @@ const timTuGoiY = (data) => {
                     for (let i = 0; i < contentJson.length; i++) {
                         if (contentJson[i].split(' ')[0] === data.tuBatDau) {
                             labelTuDien = contentJson[i].split(' ')[1]
+                            contentJson.splice(i, 1)
                             break
                         }
                     }
@@ -8352,7 +8353,7 @@ const timTuGoiY = (data) => {
                 for (let i = 0; i < contentJson.length; i++) {
                     if (contentJson[i].split(' ')[0] === data.tuBatDau) {
                         let label = contentJson[i].split(' ')[1]
-
+                        contentJson.splice(i, 1)
                         return resolve({
                             errCode: 1,
                             data: label,

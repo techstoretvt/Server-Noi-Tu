@@ -8160,6 +8160,28 @@ const themTraLoi = (data) => {
                     data,
                 });
             } else {
+                if (data.typeAdd === 'deleteTu') {
+
+                    let checkExits = false
+                    for (let i = 0; i < contentJson.length; i++) {
+                        let arrContent = contentJson[i].split(' ')
+                        if (arrContent[0] === data.tuBatDau && arrContent[1] === data.tuKetThuc) {
+                            contentJson.splice(i, 1)
+                            checkExits = true
+                        }
+                    }
+                    if (checkExits) {
+                        const jsonContent = JSON.stringify(contentJson, null, 2);
+                        fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
+                            if (err) {
+                                console.error('Error writing to JSON file:', err);
+                            }
+                            console.log('JSON file overwritten successfully.');
+                        });
+                    }
+                }
+
+
                 data.tuBatDau = data.tuBatDau.toLowerCase()
                 data.tuKetThuc = data.tuKetThuc.toLowerCase()
 
@@ -8231,23 +8253,7 @@ const themTraLoi = (data) => {
                     );
                 }
 
-                let checkExits = false
-                for (let i = 0; i < contentJson.length; i++) {
-                    let arrContent = contentJson[i].split(' ')
-                    if (arrContent[0] === data.tuBatDau && arrContent[1] === data.tuKetThuc) {
-                        contentJson.splice(i, 1)
-                        checkExits = true
-                    }
-                }
-                if (checkExits) {
-                    const jsonContent = JSON.stringify(contentJson, null, 2);
-                    fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
-                        if (err) {
-                            console.error('Error writing to JSON file:', err);
-                        }
-                        console.log('JSON file overwritten successfully.');
-                    });
-                }
+
 
                 resolve({
                     errCode: 0,

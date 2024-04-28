@@ -8231,6 +8231,25 @@ const themTraLoi = (data) => {
                     );
                 }
 
+                let checkExits = false
+                for (let i = 0; i < contentJson.length; i++) {
+                    let arrContent = contentJson[i].split(' ')
+                    if (arrContent[0] === data.tuBatDau && arrContent[1] === data.tuKetThuc) {
+                        contentJson.splice(i, 1)
+                        checkExits = true
+                    }
+                }
+                if (checkExits) {
+                    const jsonContent = JSON.stringify(contentJson, null, 2);
+                    fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
+                        if (err) {
+                            console.error('Error writing to JSON file:', err);
+                            return;
+                        }
+                        console.log('JSON file overwritten successfully.');
+                    });
+                }
+
                 resolve({
                     errCode: 0,
                     mess: 'success'
@@ -8315,9 +8334,18 @@ const timTuGoiY = (data) => {
                 });
 
                 if (tuWarning) {
+                    let labelTuDien
+                    for (let i = 0; i < contentJson.length; i++) {
+                        if (contentJson[i].split(' ')[0] === data.tuBatDau) {
+                            labelTuDien = contentJson[i].split(' ')[1]
+                            // contentJson.splice(i, 1)
+                            break
+                        }
+                    }
                     return resolve({
                         errCode: 0,
                         data: tuWarning.label,
+                        dataTuDien: labelTuDien,
                         type: tuWarning.type
                     });
                 }
@@ -8325,9 +8353,12 @@ const timTuGoiY = (data) => {
 
                 for (let i = 0; i < contentJson.length; i++) {
                     if (contentJson[i].split(' ')[0] === data.tuBatDau) {
+                        let label = contentJson[i].split(' ')[1]
+                        // contentJson.splice(i, 1)
+
                         return resolve({
                             errCode: 1,
-                            data: contentJson[i].split(' ')[1],
+                            data: label,
                             type: "tuDien"
                         });
                     }

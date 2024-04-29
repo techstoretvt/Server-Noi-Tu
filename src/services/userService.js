@@ -8296,7 +8296,7 @@ const timTuGoiY = (data) => {
                 });
             } else {
                 data.tuBatDau = data.tuBatDau.toLowerCase()
-                data.listWord = data.listWord ?? []
+                data.listWord = data.listWord ?? null
 
                 let [tuBD, created] = await db.TuBatDaus.findOrCreate({
                     where: {
@@ -8448,6 +8448,44 @@ const xoaTu = (data) => {
     });
 };
 
+const updateTuDien = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            let newArr = contentJson
+            let tuBatDaus = await db.TuBatDaus.findAll()
+            let size = tuBatDaus.length
+            let i = 0
+            for (let tbd of tuBatDaus) {
+                i++
+                let tuKetThucs = await db.TuKetThucs.findAll({
+                    where: {
+                        idTuBatDau: tbd.id
+                    }
+                })
+                for (let tkt of tuKetThucs) {
+                    newArr = newArr.filter(item => item !== `${tbd.label} ${tkt.label}`);
+                }
+                console.log(`processing... ${i}/${size}`);
+            }
+
+            const jsonContent = JSON.stringify(newArr, null, 2);
+            fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
+                if (err) {
+                    console.error('Error writing to JSON file:', err);
+                }
+                console.log('JSON file overwritten successfully.');
+            });
+
+            return resolve({
+                errCode: 1,
+                mess: "not found"
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
 
 module.exports = {
@@ -8574,5 +8612,6 @@ module.exports = {
     themTuDie,
     themTraLoi,
     timTuGoiY,
-    xoaTu
+    xoaTu,
+    updateTuDien
 };

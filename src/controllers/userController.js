@@ -1492,6 +1492,18 @@ const xoaTu = async (req, res, next) => {
     }
 };
 
+const updateTuDien = async (req, res, next) => {
+    try {
+        //call service data
+        let data = await userService.updateTuDien(req.query);
+
+        return res.status(200).json(data);
+    } catch (e) {
+        next(e);
+    }
+};
+
+
 
 
 module.exports = {
@@ -1621,5 +1633,6 @@ module.exports = {
     themTuDie,
     themTraLoi,
     timTuGoiY,
-    xoaTu
+    xoaTu,
+    updateTuDien
 };

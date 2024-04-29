@@ -639,6 +639,11 @@ const initUserRoute = (app) => {
         userController.timTuGoiY
     );
 
+    router.get(
+        "/update-tu-dien",
+        userController.updateTuDien
+    );
+
 
     return app.use('/', router);
 };

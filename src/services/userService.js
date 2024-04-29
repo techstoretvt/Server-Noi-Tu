@@ -8253,6 +8253,25 @@ const themTraLoi = (data) => {
                     );
                 }
 
+                //check co phai tu die
+                let [checkTuDie, createdCheck] = await db.TuBatDaus.findOrCreate({
+                    where: {
+                        label: data.tuKetThuc
+                    },
+                    defaults: {
+                        id: uuidv4()
+                    },
+                });
+
+                let checkExit = await db.TuKetThucs.findOne({
+                    where: {
+                        idTuBatDau: checkTuDie.id
+                    }
+                })
+                if (!checkExit) {
+                    themTuDie(data)
+                }
+
 
 
                 resolve({

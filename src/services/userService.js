@@ -8361,7 +8361,7 @@ const timTuGoiY = (data) => {
                     let labelTuDien
                     let size = contentJson.length
                     for (let i = 0; i < size; i++) {
-                        if (contentJson[i].split(' ')[0] === data.tuBatDau) {
+                        if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
                             labelTuDien = contentJson[i].split(' ')[1]
                             contentJson.splice(i, 1)
                             break
@@ -8379,7 +8379,7 @@ const timTuGoiY = (data) => {
 
                 let size = contentJson.length
                 for (let i = 0; i < size; i++) {
-                    if (contentJson[i].split(' ')[0] === data.tuBatDau) {
+                    if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
                         let label = contentJson[i].split(' ')[1]
                         contentJson.splice(i, 1)
                         return resolve({

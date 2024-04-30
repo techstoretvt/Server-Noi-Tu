@@ -20,7 +20,7 @@ import { handleEmit } from "../index";
 import Fuse from "fuse.js";
 import { dataflow } from "googleapis/build/src/apis/dataflow";
 const createError = require("http-errors");
-import contentJson from '../services/content-json.json'
+let contentJson = require('./content-json.json')
 var cloudinary = require("cloudinary");
 // await cloudinary.v2.uploader.destroy('vznd4hds4kudr0zbvfop')
 cloudinary.config({
@@ -8296,7 +8296,7 @@ const timTuGoiY = (data) => {
                 });
             } else {
                 data.tuBatDau = data.tuBatDau.toLowerCase()
-                data.listWord = data.listWord ?? null
+                data.listWord = data.listWord ?? []
 
                 let [tuBD, created] = await db.TuBatDaus.findOrCreate({
                     where: {
@@ -8306,7 +8306,6 @@ const timTuGoiY = (data) => {
                         id: uuidv4()
                     },
                 });
-
 
                 let tuDie = await db.TuKetThucs.findOne({
                     where: {
@@ -8357,6 +8356,7 @@ const timTuGoiY = (data) => {
                     order: [['stt', 'desc']],
                 });
 
+
                 if (tuWarning) {
                     let labelTuDien
                     let size = contentJson.length
@@ -8377,20 +8377,25 @@ const timTuGoiY = (data) => {
                 }
 
 
+
                 let size = contentJson.length
+                let dataRes
                 for (let i = 0; i < size; i++) {
-                    if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
+                    if (!data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
                         let label = contentJson[i].split(' ')[1]
                         contentJson.splice(i, 1)
-                        return resolve({
+                        dataRes = {
                             errCode: 1,
                             data: label,
                             type: "tuDien",
                             type2: 'tuDien'
-                        });
+                        };
+                        break
                     }
                 }
-
+                if (dataRes) {
+                    return resolve(dataRes)
+                }
 
 
                 return resolve({

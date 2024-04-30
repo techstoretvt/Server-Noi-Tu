@@ -8359,7 +8359,8 @@ const timTuGoiY = (data) => {
 
                 if (tuWarning) {
                     let labelTuDien
-                    for (let i = 0; i < contentJson.length; i++) {
+                    let size = contentJson.length
+                    for (let i = 0; i < size; i++) {
                         if (contentJson[i].split(' ')[0] === data.tuBatDau) {
                             labelTuDien = contentJson[i].split(' ')[1]
                             contentJson.splice(i, 1)
@@ -8370,19 +8371,22 @@ const timTuGoiY = (data) => {
                         errCode: 0,
                         data: tuWarning.label,
                         dataTuDien: labelTuDien,
-                        type: tuWarning.type
+                        type: tuWarning.type,
+                        type2: labelTuDien ? 'tuDien' : 'warning'
                     });
                 }
 
 
-                for (let i = 0; i < contentJson.length; i++) {
+                let size = contentJson.length
+                for (let i = 0; i < size; i++) {
                     if (contentJson[i].split(' ')[0] === data.tuBatDau) {
                         let label = contentJson[i].split(' ')[1]
                         contentJson.splice(i, 1)
                         return resolve({
                             errCode: 1,
                             data: label,
-                            type: "tuDien"
+                            type: "tuDien",
+                            type2: 'tuDien'
                         });
                     }
                 }

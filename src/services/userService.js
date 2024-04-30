@@ -8170,15 +8170,15 @@ const themTraLoi = (data) => {
                             checkExits = true
                         }
                     }
-                    if (checkExits) {
-                        const jsonContent = JSON.stringify(contentJson, null, 2);
-                        fs.writeFile('./src/services/content-json.json', jsonContent, 'utf8', (err) => {
-                            if (err) {
-                                console.error('Error writing to JSON file:', err);
-                            }
-                            console.log('JSON file overwritten successfully.');
-                        });
-                    }
+                    // if (checkExits) {
+                    //     const jsonContent = JSON.stringify(contentJson, null, 2);
+                    //     fs.writeFile('./src/services/content-json.json', jsonContent, 'utf8', (err) => {
+                    //         if (err) {
+                    //             console.error('Error writing to JSON file:', err);
+                    //         }
+                    //         console.log('JSON file overwritten successfully.');
+                    //     });
+                    // }
                 }
 
 

@@ -21,6 +21,8 @@ import Fuse from "fuse.js";
 import { dataflow } from "googleapis/build/src/apis/dataflow";
 const createError = require("http-errors");
 let contentJson = require('./content-json.json')
+const axios = require('axios');
+// let allContentJson = require('./all-data.json')
 var cloudinary = require("cloudinary");
 // await cloudinary.v2.uploader.destroy('vznd4hds4kudr0zbvfop')
 cloudinary.config({
@@ -8461,35 +8463,182 @@ const updateTuDien = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
 
-            let newArr = contentJson
-            let tuBatDaus = await db.TuBatDaus.findAll()
-            let size = tuBatDaus.length
+            let size = contentJson.length
             let i = 0
-            for (let tbd of tuBatDaus) {
+            let acctions = []
+            for (let word of contentJson) {
                 i++
-                let tuKetThucs = await db.TuKetThucs.findAll({
-                    where: {
-                        idTuBatDau: tbd.id
-                    }
-                })
-                for (let tkt of tuKetThucs) {
-                    newArr = newArr.filter(item => item !== `${tbd.label} ${tkt.label}`);
+                acctions.push(themTraLoi({
+                    tuBatDau: word.split(' ')[0],
+                    tuKetThuc: word.split(' ')[1]
+                }))
+                if (i % 50 === 0) {
+                    await Promise.all(acctions).then((values) => {
+                        console.log(i);
+                    });
+                    acctions = []
                 }
                 console.log(`processing... ${i}/${size}`);
             }
 
-            const jsonContent = JSON.stringify(newArr, null, 2);
-            fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
-                if (err) {
-                    console.error('Error writing to JSON file:', err);
-                }
-                console.log('JSON file overwritten successfully.');
-            });
+            // Promise.all(acctions).then((values) => {
+            //     console.log(values);
+            // });
 
             return resolve({
                 errCode: 1,
                 mess: "not found"
             });
+
+
+            // let newArr = contentJson
+            // let tuBatDaus = await db.TuBatDaus.findAll()
+            // let size = tuBatDaus.length
+            // let i = 0
+            // for (let tbd of tuBatDaus) {
+            //     i++
+            //     let tuKetThucs = await db.TuKetThucs.findAll({
+            //         where: {
+            //             idTuBatDau: tbd.id
+            //         }
+            //     })
+            //     for (let tkt of tuKetThucs) {
+            //         newArr = newArr.filter(item => item !== `${tbd.label} ${tkt.label}`);
+            //     }
+            //     console.log(`processing... ${i}/${size}`);
+            // }
+
+            // const jsonContent = JSON.stringify(newArr, null, 2);
+            // fs.writeFile('content-json.json', jsonContent, 'utf8', (err) => {
+            //     if (err) {
+            //         console.error('Error writing to JSON file:', err);
+            //     }
+            //     console.log('JSON file overwritten successfully.');
+            // });
+
+
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const trainingData = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            setTimeout(() => {
+            }, 1000);
+
+            resolve({
+                errCode: 0,
+                mess: "Hello"
+            });
+
+            console.log("Start Training");
+
+            // loc tu sai
+            // let allData = await db.TuBatDaus.findAll({
+            //     include: [
+            //         {
+            //             model: db.TuKetThucs
+            //         }
+            //     ],
+            //     raw: false,
+            //     nest: true,
+            //     // limit: 10
+            // })
+
+
+            // // console.log(allData[0].dataValues);
+            // let soLoi = 0
+            // let soVong = 0
+            // let tongSoVong = allData.length
+            // for (let item of allData) {
+            //     soVong++
+            //     item = item.dataValues
+            //     let tuKetThucs = item.TuKetThucs
+
+            //     if (tuKetThucs.length !== 0) {
+
+            //         for (let tuKetThuc of tuKetThucs) {
+            //             tuKetThuc = tuKetThuc.dataValues
+            //             let word = item.label + ' ' + tuKetThuc.label
+
+            //             // Gửi yêu cầu GET
+            //             let response = await axios.get(`https://noitu.pro/answer?word=${word}`);
+            //             response = response.data
+
+
+            //             if (response.success) {
+
+            //             }
+            //             else {
+            //                 soLoi++
+            //                 console.log(soLoi, `${soVong}/${tongSoVong}`);
+            //                 await db.TuKetThucs.destroy({
+            //                     where: {
+            //                         idTuBatDau: item.id,
+            //                         label: tuKetThuc.label
+            //                     },
+            //                 })
+            //             }
+
+            //         }
+            //     }
+            // }
+
+            //end loc tu sai
+
+
+            //them tu
+            let soVong = 0
+            let tongSoVong = contentJson.length
+            for (let item of contentJson) {
+                soVong++
+                let tuBatDau = item.split(' ')[0]
+                let tuKetThuc = item.split(' ')[1]
+
+                let response = await axios.get(`https://noitu.pro/answer?word=${item}`);
+                response = response.data
+
+
+                if (response.success) {
+
+
+                    let [TBD, createdTBD] = await db.TuBatDaus.findOrCreate({
+                        where: { label: tuBatDau },
+                        defaults: {
+                            id: uuidv4(),
+                        },
+                        // raw: false,
+                    });
+
+                    let [TKT, createdTKT] = await db.TuKetThucs.findOrCreate({
+                        where: { label: tuKetThuc, idTuBatDau: TBD.id },
+                        defaults: {
+                            id: uuidv4(),
+                        },
+                        // raw: false,
+                    });
+
+                    if (createdTKT) {
+                        console.log(item, `${soVong}/${tongSoVong}`);
+                    }
+
+                }
+
+            }
+
+
+
+            //end them tu
+
+            console.log("End Training");
+
+
+
+
         } catch (e) {
             reject(e);
         }
@@ -8622,5 +8771,6 @@ module.exports = {
     themTraLoi,
     timTuGoiY,
     xoaTu,
-    updateTuDien
+    updateTuDien,
+    trainingData
 };

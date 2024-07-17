@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     class TuKetThuc extends Model {
         static associate(models) {
             // define association here
+            TuKetThuc.belongsTo(models.TuBatDaus, { foreignKey: 'idTuBatDau' });
 
         }
     }

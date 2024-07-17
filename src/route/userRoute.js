@@ -644,6 +644,11 @@ const initUserRoute = (app) => {
         userController.updateTuDien
     );
 
+    router.get(
+        "/tranning-data",
+        userController.trainingData
+    );
+
 
     return app.use('/', router);
 };

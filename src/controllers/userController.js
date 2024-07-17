@@ -1503,6 +1503,17 @@ const updateTuDien = async (req, res, next) => {
     }
 };
 
+const trainingData = async (req, res, next) => {
+    try {
+        //call service data
+        let data = await userService.trainingData(req.query);
+
+        return res.status(200).json(data);
+    } catch (e) {
+        next(e);
+    }
+};
+
 
 
 
@@ -1634,5 +1645,6 @@ module.exports = {
     themTraLoi,
     timTuGoiY,
     xoaTu,
-    updateTuDien
+    updateTuDien,
+    trainingData
 };

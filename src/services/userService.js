@@ -8535,6 +8535,7 @@ const trainingData = (data) => {
                 mess: "Hello"
             });
 
+
             console.log("Start Training");
 
             // loc tu sai
@@ -8592,8 +8593,13 @@ const trainingData = (data) => {
 
 
             //them tu
-            let soVong = 0
+            let soVong = 1365
+            let soTu = 0
             let tongSoVong = contentJson.length
+            let timestamp = new Date().getTime()
+
+            contentJson = contentJson.slice(soVong);
+
             for (let item of contentJson) {
                 soVong++
                 let tuBatDau = item.split(' ')[0]
@@ -8614,23 +8620,26 @@ const trainingData = (data) => {
                         // raw: false,
                     });
 
+                    let randomNumber = Math.floor(Math.random() * 100) + 1;
                     let [TKT, createdTKT] = await db.TuKetThucs.findOrCreate({
                         where: { label: tuKetThuc, idTuBatDau: TBD.id },
                         defaults: {
                             id: uuidv4(),
+                            stt: randomNumber,
+                            type: 'normal'
                         },
                         // raw: false,
                     });
 
                     if (createdTKT) {
-                        console.log(item, `${soVong}/${tongSoVong}`);
+                        soTu++
+                        let timestamp2 = new Date().getTime()
+                        console.log(`${Math.floor((timestamp2 - timestamp) / 1000)}\t`, soTu, "\t", item, `\t${soVong}/${tongSoVong}`);
                     }
 
                 }
 
             }
-
-
 
             //end them tu
 

@@ -8165,7 +8165,10 @@ const themTraLoi = (data) => {
                     data,
                 });
             } else {
-
+                resolve({
+                    errCode: 0,
+                    mess: 'success'
+                });
 
                 data.tuBatDau = data.tuBatDau.toLowerCase()
                 data.tuKetThuc = data.tuKetThuc.toLowerCase()
@@ -8203,10 +8206,7 @@ const themTraLoi = (data) => {
                 await updateTypeTuMoi(data.tuBatDau, data.tuKetThuc)
 
 
-                resolve({
-                    errCode: 0,
-                    mess: 'success'
-                });
+
             }
         } catch (e) {
             reject(e);

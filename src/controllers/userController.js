@@ -1481,6 +1481,18 @@ const timTuGoiY = async (req, res, next) => {
     }
 };
 
+const listTuKetThuc = async (req, res, next) => {
+    try {
+        //call service data
+        let data = await userService.listTuKetThuc(req.query);
+
+        return res.status(200).json(data);
+    } catch (e) {
+        next(e);
+    }
+};
+
+
 const xoaTu = async (req, res, next) => {
     try {
         //call service data
@@ -1644,6 +1656,7 @@ module.exports = {
     themTuDie,
     themTraLoi,
     timTuGoiY,
+    listTuKetThuc,
     xoaTu,
     updateTuDien,
     trainingData

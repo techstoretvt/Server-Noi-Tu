@@ -3,7 +3,7 @@ require("dotenv").config();
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import Verifier from "email-verifier";
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 import {
     signAccessToken,
     signRefreshToken,
@@ -8514,6 +8514,43 @@ const timTuGoiY = (data) => {
     });
 };
 
+const listTuKetThuc = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.tuBatDau) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameter!",
+                    data,
+                });
+            } else {
+                data.tuBatDau = data.tuBatDau.toLowerCase()
+
+                let tubatdau = await db.TuBatDaus.findOne({
+                    where: {
+                        label: data.tuBatDau
+                    }
+                })
+
+                let tuKetThucs = await db.TuKetThucs.findAll({
+                    where: {
+                        idTuBatDau: tubatdau.id
+                    }
+                })
+
+                return resolve({
+                    errCode: 0,
+                    data: tuKetThucs
+                });
+
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+
 const xoaTu = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -8975,5 +9012,6 @@ module.exports = {
     timTuGoiY,
     xoaTu,
     updateTuDien,
-    trainingData
+    trainingData,
+    listTuKetThuc
 };

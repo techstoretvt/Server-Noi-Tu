@@ -630,6 +630,11 @@ const initUserRoute = (app) => {
     );
 
     router.post(
+        "/list-tu-ket-thuc",
+        userController.listTuKetThuc
+    );
+
+    router.post(
         "/xoa-tu",
         userController.xoaTu
     );

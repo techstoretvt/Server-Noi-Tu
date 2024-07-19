@@ -8108,6 +8108,7 @@ const themTuDie = (data) => {
                     await tuKT.save();
                 }
 
+                //v1
                 await db.TuKetThucs.update(
                     { type: 'die', },
                     {
@@ -8141,6 +8142,8 @@ const themTuDie = (data) => {
                     );
                 }
 
+
+
                 resolve({
                     errCode: 0,
                     mess: 'success'
@@ -8162,26 +8165,6 @@ const themTraLoi = (data) => {
                     data,
                 });
             } else {
-                if (data.typeAdd === 'deleteTu') {
-
-                    let checkExits = false
-                    for (let i = 0; i < contentJson.length; i++) {
-                        let arrContent = contentJson[i].split(' ')
-                        if (arrContent[0] === data.tuBatDau && arrContent[1] === data.tuKetThuc) {
-                            contentJson.splice(i, 1)
-                            checkExits = true
-                        }
-                    }
-                    // if (checkExits) {
-                    //     const jsonContent = JSON.stringify(contentJson, null, 2);
-                    //     fs.writeFile('./src/services/content-json.json', jsonContent, 'utf8', (err) => {
-                    //         if (err) {
-                    //             console.error('Error writing to JSON file:', err);
-                    //         }
-                    //         console.log('JSON file overwritten successfully.');
-                    //     });
-                    // }
-                }
 
 
                 data.tuBatDau = data.tuBatDau.toLowerCase()
@@ -8215,65 +8198,9 @@ const themTraLoi = (data) => {
                     raw: false
                 });
 
-                if (!created2) {
-                    tuKT.stt = tuKT.stt === amount ? amount : amount + tuKT.stt;
-                    await tuKT.save();
-                }
-
-
-                await db.TuKetThucs.update(
-                    { type: 'normal', },
-                    {
-                        where: {
-                            label: data.tuBatDau,
-                            type: 'die',
-                        },
-                    },
-                );
-
-
-                let listTuNguyHiem = await db.TuKetThucs.findAll({
-                    where: {
-                        label: data.tuBatDau,
-                    },
-                })
-
-                for (const element of listTuNguyHiem) {
-                    let labelTuBatDau = await db.TuBatDaus.findOne({
-                        where: {
-                            id: element.idTuBatDau
-                        }
-                    })
-
-                    await db.TuKetThucs.update(
-                        { type: 'normal', },
-                        {
-                            where: {
-                                label: labelTuBatDau.label
-                            },
-                        },
-                    );
-                }
-
-                //check co phai tu die
-                let [checkTuDie, createdCheck] = await db.TuBatDaus.findOrCreate({
-                    where: {
-                        label: data.tuKetThuc
-                    },
-                    defaults: {
-                        id: uuidv4()
-                    },
-                });
-
-                let checkExit = await db.TuKetThucs.findOne({
-                    where: {
-                        idTuBatDau: checkTuDie.id
-                    }
-                })
-                if (!checkExit) {
-                    themTuDie(data)
-                }
-
+                tuKT.stt = tuKT.stt === amount ? amount : amount + tuKT.stt;
+                await tuKT.save();
+                await updateTypeTuMoi(data.tuBatDau, data.tuKetThuc)
 
 
                 resolve({
@@ -8286,6 +8213,181 @@ const themTraLoi = (data) => {
         }
     });
 };
+
+
+const updateTypeTuMoi = async (strTuBatDau, strTuKetThuc) => {
+    // vi du: học bạ  -- từ normal, warning, die
+
+    // cập nhật từ "bạ" và những từ kết nối với từ "bạ"
+    let typeTuKetThuc = await kiemTraLoaiTu(strTuKetThuc)
+    if (typeTuKetThuc === 'die') {
+        // chuyển từ "bạ" thành die
+        await db.TuKetThucs.update(
+            { type: 'die' },
+            {
+                where: {
+                    label: strTuKetThuc // bạ
+                },
+            },
+        );
+
+        // chuyển tất cả từ kết nối với từ "bạ" thành warning: gồm từ "học" và cả các từ khác
+        let listTubatdau = await db.TuBatDaus.findAll({
+            include: [
+                {
+                    model: db.TuKetThucs,
+                    where: {
+                        label: strTuKetThuc // bạ
+                    }
+                }
+            ],
+            nest: true,
+            raw: false
+        })
+
+        for (let tuBatDau of listTubatdau) {
+            await db.TuKetThucs.update(
+                { type: 'warning' },
+                {
+                    where: {
+                        label: tuBatDau.dataValues.label
+                    },
+                },
+            );
+        }
+    }
+    else if (typeTuKetThuc === 'warning') {
+        await db.TuKetThucs.update(
+            { type: 'warning' },
+            {
+                where: {
+                    label: strTuKetThuc // bạ
+                },
+            },
+        );
+    }
+    else {
+        await db.TuKetThucs.update(
+            { type: 'normal' },
+            {
+                where: {
+                    label: strTuKetThuc // bạ
+                },
+            },
+        );
+    }
+
+    // cập nhật từ "học" và những từ từng xem từ "học" là từ die: từ "học" không thể là từ die
+    let typeTuBatDau = await kiemTraLoaiTu(strTuBatDau)
+    if (typeTuBatDau === 'warning') {
+        await db.TuKetThucs.update(
+            { type: 'warning' },
+            {
+                where: {
+                    label: strTuBatDau // hoc
+                },
+            },
+        );
+    }
+    else {
+        await db.TuKetThucs.update(
+            { type: 'normal' },
+            {
+                where: {
+                    label: strTuBatDau // hoc
+                },
+            },
+        );
+    }
+
+    let listTubatdau = await db.TuBatDaus.findAll({
+        include: [
+            {
+                model: db.TuKetThucs,
+                where: {
+                    label: strTuBatDau // học
+                }
+            }
+        ],
+        nest: true,
+        raw: false
+    })
+
+    for (let tuBatDau of listTubatdau) {
+        let tuKetThucTypeDie = await db.TuKetThucs.findOne({
+            where: {
+                idTuBatDau: tuBatDau.dataValues.id,
+                type: 'die'
+            }
+        })
+        // nếu không có kết nối với từ die khác: đổi thành normal, còn không thì giữ nguyên
+        if (!tuKetThucTypeDie) {
+
+            await db.TuKetThucs.update(
+                { type: 'normal' },
+                {
+                    where: {
+                        label: tuBatDau.dataValues.label
+                    },
+                },
+            );
+        }
+        else {
+            await db.TuKetThucs.update(
+                { type: 'warning' },
+                {
+                    where: {
+                        label: tuBatDau.dataValues.label
+                    },
+                },
+            );
+        }
+
+    }
+
+
+
+
+}
+
+const kiemTraLoaiTu = async (tuVung) => {
+    let tuBatDau = await db.TuBatDaus.findOne({
+        where: {
+            label: tuVung
+        }
+    })
+
+    let tuKetThuc = await db.TuKetThucs.findOne({
+        where: {
+            idTuBatDau: tuBatDau.id,
+        }
+    })
+
+    // nếu không kết nối với từ kết thúc thì là từ die
+    if (!tuKetThuc) {
+        return 'die';
+    }
+    // Không phải từ die
+    else {
+        let tuKetThucTypeDie = await db.TuKetThucs.findOne({
+            where: {
+                idTuBatDau: tuBatDau.id,
+                type: 'die'
+            }
+        })
+
+        // nếu kết nối với từ die: là từ warning
+        if (tuKetThucTypeDie) {
+            return 'warning';
+        }
+        // còn không là từ normal
+        else {
+            return 'normal';
+        }
+
+    }
+
+}
 
 const timTuGoiY = (data) => {
     return new Promise(async (resolve, reject) => {
@@ -8527,9 +8629,6 @@ const trainingData = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
 
-            setTimeout(() => {
-            }, 1000);
-
             resolve({
                 errCode: 0,
                 mess: "Hello"
@@ -8593,59 +8692,154 @@ const trainingData = (data) => {
 
 
             //them tu
-            let soVong = 1365
-            let soTu = 0
-            let tongSoVong = contentJson.length
-            let timestamp = new Date().getTime()
+            // let soVong = +data.from
+            // let soTu = 0
+            // let tongSoVong = contentJson.length
+            // let timestamp = new Date().getTime()
 
-            contentJson = contentJson.slice(soVong);
+            // contentJson = contentJson.slice(soVong);
 
-            for (let item of contentJson) {
-                soVong++
-                let tuBatDau = item.split(' ')[0]
-                let tuKetThuc = item.split(' ')[1]
+            // for (let item of contentJson) {
+            //     soVong++
+            //     let tuBatDau = item.split(' ')[0]
+            //     let tuKetThuc = item.split(' ')[1]
 
-                let response = await axios.get(`https://noitu.pro/answer?word=${item}`);
-                response = response.data
-
-
-                if (response.success) {
+            //     let response = await axios.get(`https://noitu.pro/answer?word=${item}`);
+            //     response = response.data
 
 
-                    let [TBD, createdTBD] = await db.TuBatDaus.findOrCreate({
-                        where: { label: tuBatDau },
-                        defaults: {
-                            id: uuidv4(),
-                        },
-                        // raw: false,
-                    });
+            //     if (response.success) {
 
-                    let randomNumber = Math.floor(Math.random() * 100) + 1;
-                    let [TKT, createdTKT] = await db.TuKetThucs.findOrCreate({
-                        where: { label: tuKetThuc, idTuBatDau: TBD.id },
-                        defaults: {
-                            id: uuidv4(),
-                            stt: randomNumber,
-                            type: 'normal'
-                        },
-                        // raw: false,
-                    });
 
-                    if (createdTKT) {
-                        soTu++
-                        let timestamp2 = new Date().getTime()
-                        console.log(`${Math.floor((timestamp2 - timestamp) / 1000)}\t`, soTu, "\t", item, `\t${soVong}/${tongSoVong}`);
-                    }
+            //         let [TBD, createdTBD] = await db.TuBatDaus.findOrCreate({
+            //             where: { label: tuBatDau },
+            //             defaults: {
+            //                 id: uuidv4(),
+            //             },
+            //             // raw: false,
+            //         });
 
+            //         let randomNumber = Math.floor(Math.random() * 100) + 1;
+            //         let [TKT, createdTKT] = await db.TuKetThucs.findOrCreate({
+            //             where: { label: tuKetThuc, idTuBatDau: TBD.id },
+            //             defaults: {
+            //                 id: uuidv4(),
+            //                 stt: randomNumber,
+            //                 type: 'normal'
+            //             },
+            //             // raw: false,
+            //         });
+
+            //         if (createdTKT) {
+            //             soTu++
+            //             let timestamp2 = new Date().getTime()
+            //             console.log(`${Math.floor((timestamp2 - timestamp) / 1000)}\t`, soTu, "\t", item, `\t${soVong}/${tongSoVong}`);
+            //         }
+
+            //     }
+
+            // }
+
+            //end them tu
+
+
+            //đánh dấu từ die
+            // let listTubatdau = await db.TuBatDaus.findAll()
+            // console.log("length tubatdau: ", listTubatdau.length);
+
+            // listTubatdau = listTubatdau.slice(0);
+
+            // let i = 0
+            // for (let tuBatDau of listTubatdau) {
+            //     i++
+            //     let findKetThuc = await db.TuKetThucs.findOne({
+            //         where: {
+            //             idTuBatDau: tuBatDau.id
+            //         }
+            //     })
+            //     if (!findKetThuc) {
+            //         await db.TuKetThucs.update(
+            //             { type: 'die' },
+            //             {
+            //                 where: {
+            //                     label: tuBatDau.label
+            //                 },
+            //             },
+            //         );
+            //         console.log(i, tuBatDau.label, 'die');
+            //     }
+            //     else {
+            //         console.log(i, tuBatDau.label);
+            //     }
+            // }
+            //end đánh dấu từ die
+
+            //đánh dấu từ warning
+            let listTuDie = await db.TuKetThucs.findAll({
+                where: {
+                    type: 'die'
                 }
+            })
+            console.log("length tu die: ", listTuDie.length);
+            listTuDie = listTuDie.map(item => item.label)
+            listTuDie = [...new Set(listTuDie)];
+            console.log("length tu die: ", listTuDie.length);
+
+
+            let i = 0;
+            for (let tuDie of listTuDie) {
+                i++
+                console.log(i, tuDie);
+                let listTubatdau = await db.TuBatDaus.findAll({
+                    include: [
+                        {
+                            model: db.TuKetThucs,
+                            where: {
+                                label: tuDie
+                            }
+                        }
+                    ],
+                    nest: true,
+                    raw: false
+                })
+
+                for (let tuBatDau of listTubatdau) {
+                    await db.TuKetThucs.update(
+                        { type: 'warning' },
+                        {
+                            where: {
+                                label: tuBatDau.dataValues.label
+                            },
+                        },
+                    );
+                }
+
 
             }
 
-            //end them tu
+
+
+
+
+
+
+
+
+
+
+
+
+            //end đánh dấu warning
+
+
 
             console.log("End Training");
 
 
+            // resolve({
+            //     errCode: 0,
+            //     mess: "Hello"
+            // });
 
 
         } catch (e) {

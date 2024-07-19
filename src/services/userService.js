@@ -8419,7 +8419,7 @@ const timTuGoiY = (data) => {
                             [Op.notIn]: data.listWord
                         }
                     },
-                    order: [['stt', 'desc']],
+                    order: [['stt', 'asc']],
                 });
 
                 if (tuDie) {
@@ -8438,7 +8438,7 @@ const timTuGoiY = (data) => {
                             [Op.notIn]: data.listWord
                         }
                     },
-                    order: [['stt', 'desc']],
+                    order: [['stt', 'asc']],
                 });
 
                 if (tuNormal) {
@@ -8457,7 +8457,7 @@ const timTuGoiY = (data) => {
                             [Op.notIn]: data.listWord
                         }
                     },
-                    order: [['stt', 'desc']],
+                    order: [['stt', 'asc']],
                 });
 
 

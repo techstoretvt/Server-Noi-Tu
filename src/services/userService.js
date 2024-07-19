@@ -8423,6 +8423,14 @@ const timTuGoiY = (data) => {
                 });
 
                 if (tuDie) {
+                    await db.TuKetThucs.increment(
+                        {
+                            stt: 10
+                        }, {
+                        where: {
+                            id: tuDie.id
+                        }
+                    })
                     return resolve({
                         errCode: 0,
                         data: tuDie.label,
@@ -8442,6 +8450,14 @@ const timTuGoiY = (data) => {
                 });
 
                 if (tuNormal) {
+                    await db.TuKetThucs.increment(
+                        {
+                            stt: 10
+                        }, {
+                        where: {
+                            id: tuNormal.id
+                        }
+                    })
                     return resolve({
                         errCode: 0,
                         data: tuNormal.label,
@@ -8471,6 +8487,14 @@ const timTuGoiY = (data) => {
                             break
                         }
                     }
+                    await db.TuKetThucs.increment(
+                        {
+                            stt: 10
+                        }, {
+                        where: {
+                            id: tuWarning.id
+                        }
+                    })
                     return resolve({
                         errCode: 0,
                         data: tuWarning.label,

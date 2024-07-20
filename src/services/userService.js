@@ -8690,10 +8690,10 @@ const trainingData = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
 
-            resolve({
-                errCode: 0,
-                mess: "Hello"
-            });
+            // resolve({
+            //     errCode: 0,
+            //     mess: "Hello"
+            // });
 
 
             console.log("Start Training");
@@ -8836,71 +8836,90 @@ const trainingData = (data) => {
             //end đánh dấu từ die
 
             //đánh dấu từ warning
-            let listTuDie = await db.TuKetThucs.findAll({
-                where: {
-                    type: 'die'
-                }
-            })
-            console.log("length tu die: ", listTuDie.length);
-            listTuDie = listTuDie.map(item => item.label)
-            listTuDie = [...new Set(listTuDie)];
-            console.log("length tu die: ", listTuDie.length);
+            // let listTuDie = await db.TuKetThucs.findAll({
+            //     where: {
+            //         type: 'die'
+            //     }
+            // })
+            // console.log("length tu die: ", listTuDie.length);
+            // listTuDie = listTuDie.map(item => item.label)
+            // listTuDie = [...new Set(listTuDie)];
+            // console.log("length tu die: ", listTuDie.length);
 
 
-            let i = 0;
-            for (let tuDie of listTuDie) {
-                i++
-                console.log(i, tuDie);
-                let listTubatdau = await db.TuBatDaus.findAll({
-                    include: [
-                        {
-                            model: db.TuKetThucs,
-                            where: {
-                                label: tuDie
-                            }
-                        }
-                    ],
-                    nest: true,
-                    raw: false
-                })
+            // let i = 0;
+            // for (let tuDie of listTuDie) {
+            //     i++
+            //     console.log(i, tuDie);
+            //     let listTubatdau = await db.TuBatDaus.findAll({
+            //         include: [
+            //             {
+            //                 model: db.TuKetThucs,
+            //                 where: {
+            //                     label: tuDie
+            //                 }
+            //             }
+            //         ],
+            //         nest: true,
+            //         raw: false
+            //     })
 
-                for (let tuBatDau of listTubatdau) {
-                    await db.TuKetThucs.update(
-                        { type: 'warning' },
-                        {
-                            where: {
-                                label: tuBatDau.dataValues.label
-                            },
-                        },
-                    );
-                }
-
-
-            }
+            //     for (let tuBatDau of listTubatdau) {
+            //         await db.TuKetThucs.update(
+            //             { type: 'warning' },
+            //             {
+            //                 where: {
+            //                     label: tuBatDau.dataValues.label
+            //                 },
+            //             },
+            //         );
+            //     }
 
 
-
-
-
-
-
-
-
-
-
-
+            // }
 
             //end đánh dấu warning
+
+            // get danh sach tu
+            let allData = await db.TuBatDaus.findAll({
+                include: [
+                    {
+                        model: db.TuKetThucs
+                    }
+                ],
+                raw: false,
+                nest: true,
+                // limit: 10
+            })
+
+            allData = allData.map(item => {
+                let arr = item.TuKetThucs.map(item2 => {
+                    return item.label + " " + item2.label
+                })
+                return arr
+            }).flat(2)
+
+            const jsonContent = JSON.stringify(allData, null, 2);
+            fs.writeFile('all-data-noi-tu.json', jsonContent, 'utf8', (err) => {
+                if (err) {
+                    console.error('Error writing to JSON file:', err);
+                }
+                console.log('JSON file overwritten successfully.');
+            });
+
+
+
+            // end get danh sach tu
 
 
 
             console.log("End Training");
 
 
-            // resolve({
-            //     errCode: 0,
-            //     mess: "Hello"
-            // });
+            resolve({
+                errCode: 0,
+                mess: "Hello"
+            });
 
 
         } catch (e) {

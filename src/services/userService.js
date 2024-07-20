@@ -8548,6 +8548,7 @@ const listTuKetThuc = (data) => {
                     data,
                 });
             } else {
+                data.listWord = data.listWord ?? []
                 data.tuBatDau = data.tuBatDau.toLowerCase()
 
                 let tubatdau = await db.TuBatDaus.findOne({
@@ -8558,7 +8559,10 @@ const listTuKetThuc = (data) => {
 
                 let tuKetThucs = await db.TuKetThucs.findAll({
                     where: {
-                        idTuBatDau: tubatdau.id
+                        idTuBatDau: tubatdau.id,
+                        label: {
+                            [Op.notIn]: data.listWord
+                        }
                     }
                 })
 

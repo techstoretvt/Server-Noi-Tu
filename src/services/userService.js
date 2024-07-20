@@ -8478,15 +8478,15 @@ const timTuGoiY = (data) => {
 
 
                 if (tuWarning) {
-                    let labelTuDien
-                    let size = contentJson.length
-                    for (let i = 0; i < size; i++) {
-                        if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
-                            labelTuDien = contentJson[i].split(' ')[1]
-                            contentJson.splice(i, 1)
-                            break
-                        }
-                    }
+                    // let labelTuDien
+                    // let size = contentJson.length
+                    // for (let i = 0; i < size; i++) {
+                    //     if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
+                    //         labelTuDien = contentJson[i].split(' ')[1]
+                    //         contentJson.splice(i, 1)
+                    //         break
+                    //     }
+                    // }
                     await db.TuKetThucs.increment(
                         {
                             stt: 10
@@ -8498,9 +8498,9 @@ const timTuGoiY = (data) => {
                     return resolve({
                         errCode: 0,
                         data: tuWarning.label,
-                        dataTuDien: labelTuDien,
+                        // dataTuDien: labelTuDien,
                         type: tuWarning.type,
-                        type2: labelTuDien ? 'tuDien' : 'warning'
+                        type2: 'warning'
                     });
                 }
 

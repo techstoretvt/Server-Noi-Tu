@@ -654,6 +654,11 @@ const initUserRoute = (app) => {
         userController.trainingData
     );
 
+    router.get(
+        "/kiem-tra-tu-ton-tai",
+        userController.kiemTraTuTonTai
+    );
+
 
     return app.use('/', router);
 };

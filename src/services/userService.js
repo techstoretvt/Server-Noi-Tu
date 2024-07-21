@@ -8935,6 +8935,50 @@ const trainingData = (data) => {
     });
 };
 
+const kiemTraTuTonTai = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.tuBatDau || !data.tuKetThuc) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameter!",
+                    data,
+                });
+            } else {
+
+
+                data.tuBatDau = data.tuBatDau.toLowerCase()
+                data.tuKetThuc = data.tuKetThuc.toLowerCase()
+
+                let tuVung = await db.TuBatDaus.findOne({
+                    where: {
+                        label: data.tuBatDau
+                    },
+                    include: [
+                        {
+                            model: db.TuKetThucs,
+                            where: {
+                                label: data.tuKetThuc
+                            }
+                        }
+                    ],
+                    nest: true,
+                    raw: false
+                })
+
+                resolve({
+                    errCode: 0,
+                    mess: 'success',
+                    isExit: !!tuVung
+                });
+
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
 
 module.exports = {
     CreateUser,
@@ -9063,5 +9107,6 @@ module.exports = {
     xoaTu,
     updateTuDien,
     trainingData,
-    listTuKetThuc
+    listTuKetThuc,
+    kiemTraTuTonTai
 };

@@ -8165,10 +8165,7 @@ const themTraLoi = (data) => {
                     data,
                 });
             } else {
-                resolve({
-                    errCode: 0,
-                    mess: 'success'
-                });
+
 
                 data.tuBatDau = data.tuBatDau.toLowerCase()
                 data.tuKetThuc = data.tuKetThuc.toLowerCase()
@@ -8203,9 +8200,15 @@ const themTraLoi = (data) => {
 
                 tuKT.stt = tuKT.stt === amount ? amount : amount + tuKT.stt;
                 await tuKT.save();
-                await updateTypeTuMoi(data.tuBatDau, data.tuKetThuc)
+                if (created2)
+                    await updateTypeTuMoi(data.tuBatDau, data.tuKetThuc)
 
 
+                resolve({
+                    errCode: 0,
+                    mess: 'success',
+                    isCreate: created2
+                });
 
             }
         } catch (e) {

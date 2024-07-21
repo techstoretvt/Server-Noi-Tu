@@ -8179,11 +8179,6 @@ const themTraLoi = (data) => {
                     },
                 });
 
-                const amount = await db.TuKetThucs.count({
-                    where: {
-                        idTuBatDau: tuBD.id
-                    },
-                });
 
                 let [tuKT, created2] = await db.TuKetThucs.findOrCreate({
                     where: {
@@ -8193,7 +8188,7 @@ const themTraLoi = (data) => {
                     defaults: {
                         id: uuidv4(),
                         type: 'normal',
-                        stt: amount + 1
+                        stt: 1
                     },
                     raw: false
                 });

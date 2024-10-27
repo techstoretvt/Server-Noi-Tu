@@ -8234,7 +8234,7 @@ const themListEnd = (data) => {
 
                 let listWord = data.listWord ?? []
 
-                await db.TuKetThucs.increment({ lost: 1 }, {
+                 db.TuKetThucs.increment({ lost: 1 }, {
                     where: {
                         label: {
                             [Op.in]: listWord

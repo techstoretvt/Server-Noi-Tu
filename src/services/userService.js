@@ -8463,7 +8463,7 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
                 [Op.notIn]: listWord
             }
         },
-        order: [['lost', 'desc']],
+        order: [['lost', 'asc']],
     })
 
     if (tuNormals) return tuNormals;

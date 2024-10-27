@@ -1470,6 +1470,17 @@ const themTraLoi = async (req, res, next) => {
     }
 };
 
+const themListEnd = async (req, res, next) => {
+    try {
+        //call service data
+        let data = await userService.themListEnd(req.body);
+
+        return res.status(200).json(data);
+    } catch (e) {
+        next(e);
+    }
+};
+
 const timTuGoiY = async (req, res, next) => {
     try {
         //call service data
@@ -1671,5 +1682,6 @@ module.exports = {
     xoaTu,
     updateTuDien,
     trainingData,
-    kiemTraTuTonTai
+    kiemTraTuTonTai,
+    themListEnd
 };

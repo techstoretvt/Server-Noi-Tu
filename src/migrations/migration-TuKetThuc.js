@@ -23,6 +23,9 @@ module.exports = {
       type: {
         type: Sequelize.STRING
       },
+      lost: {
+        type: Sequelize.INTEGER
+      },
 
 
       createdAt: {

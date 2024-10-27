@@ -629,6 +629,11 @@ const initUserRoute = (app) => {
         userController.themTraLoi
     );
 
+    router.post(
+        "/them-list-end",
+        userController.themListEnd
+    );
+
     router.get(
         "/list-tu-ket-thuc",
         userController.listTuKetThuc

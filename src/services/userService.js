@@ -8038,7 +8038,8 @@ const themTuThuong = (data) => {
                     defaults: {
                         id: uuidv4(),
                         type: 'normal',
-                        stt: amount + 1
+                        stt: amount + 1,
+                        lost: 0
                     },
                     raw: false
 
@@ -8097,7 +8098,8 @@ const themTuDie = (data) => {
                     defaults: {
                         id: uuidv4(),
                         type: 'die',
-                        stt: amount + 1
+                        stt: amount + 1,
+                        lost: 0
                     },
                     raw: false
                 });
@@ -8188,9 +8190,16 @@ const themTraLoi = (data) => {
                     defaults: {
                         id: uuidv4(),
                         type: 'normal',
-                        stt: 1
+                        stt: 1,
+                        lost: 0
                     },
                     raw: false
+                });
+
+                const amount = await db.TuKetThucs.count({
+                    where: {
+                        idTuBatDau: tuBD.id
+                    },
                 });
 
                 tuKT.stt = tuKT.stt === amount ? amount : amount + tuKT.stt;
@@ -8212,6 +8221,41 @@ const themTraLoi = (data) => {
     });
 };
 
+const themListEnd = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.listWord) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameter!",
+                    data,
+                });
+            } else {
+
+                let listWord = data.listWord ?? []
+
+                await db.TuKetThucs.increment({ lost: 1 }, {
+                    where: {
+                        label: {
+                            [Op.in]: listWord
+                        }
+                    }
+                });
+
+
+
+
+                resolve({
+                    errCode: 0,
+                    mess: 'success',
+                });
+
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
 const updateTypeTuMoi = async (strTuBatDau, strTuKetThuc) => {
     // vi du: học bạ  -- từ normal, warning, die
@@ -8387,6 +8431,83 @@ const kiemTraLoaiTu = async (tuVung) => {
 
 }
 
+
+const chonTuKetThuc = async (tuBatDau, listWord) => {
+
+    let [tuBD, created] = await db.TuBatDaus.findOrCreate({
+        where: {
+            label: tuBatDau
+        },
+        defaults: {
+            id: uuidv4()
+        },
+    });
+
+    let tuDie = await db.TuKetThucs.findOne({
+        where: {
+            idTuBatDau: tuBD.id,
+            type: "die",
+            label: {
+                [Op.notIn]: listWord
+            }
+        }
+    })
+    if (tuDie) return tuDie;
+
+    // gồm từ warning và normal
+    let tuNormals = await db.TuKetThucs.findOne({
+        where: {
+            idTuBatDau: tuBD.id,
+            type: "normal",
+            label: {
+                [Op.notIn]: listWord
+            }
+        },
+        order: [['lost', 'desc']],
+    })
+
+    if (tuNormals) return tuNormals;
+
+
+
+    // Chỉ có warning
+    let tuWarnings = await db.TuKetThucs.findAll({
+        where: {
+            idTuBatDau: tuBD.id,
+            type: "warning",
+            label: {
+                [Op.notIn]: listWord
+            }
+        }
+    })
+
+    let objWarning = {
+        "data": tuWarnings[0],
+        "count": 0
+    }
+
+    for (let item of tuWarnings) {
+        let count = await db.TuKetThucs.count({
+            include: [
+                {
+                    model: db.TuBatDaus,
+                    where: {
+                        label: item.label
+                    }
+                }
+            ]
+        })
+        if (count > objWarning.count) objWarning = {
+            "data": item,
+            "count": count
+        }
+    }
+    return objWarning.data
+
+}
+
+
+
 const timTuGoiY = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -8398,7 +8519,26 @@ const timTuGoiY = (data) => {
                 });
             } else {
                 data.tuBatDau = data.tuBatDau.toLowerCase()
-                data.listWord = data.listWord ?? []
+                let listWord = data.listWord ?? []
+                listWord = JSON.parse(listWord)
+
+                // console.log(typeof listWord,listWord)
+
+                let getTuKetThuc = await chonTuKetThuc(data.tuBatDau, listWord);
+
+                if (!getTuKetThuc) {
+                    return resolve({
+                        errCode: 1,
+                        mess: "not found"
+                    });
+                }
+
+                return resolve({
+                    errCode: 0,
+                    data: getTuKetThuc.label,
+                    type: getTuKetThuc.type
+                });
+
 
                 let [tuBD, created] = await db.TuBatDaus.findOrCreate({
                     where: {
@@ -9103,5 +9243,6 @@ module.exports = {
     updateTuDien,
     trainingData,
     listTuKetThuc,
-    kiemTraTuTonTai
+    kiemTraTuTonTai,
+    themListEnd
 };

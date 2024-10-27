@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
             label: DataTypes.STRING,
             stt: DataTypes.INTEGER,
             type: DataTypes.STRING, //normal, warning, die
+            lost: DataTypes.INTEGER,
 
         },
         {

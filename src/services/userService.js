@@ -8039,7 +8039,8 @@ const themTuThuong = (data) => {
                         id: uuidv4(),
                         type: 'normal',
                         stt: amount + 1,
-                        lost: 0
+                        lost: 0,
+                        canWin: 'false'
                     },
                     raw: false
 
@@ -8099,7 +8100,8 @@ const themTuDie = (data) => {
                         id: uuidv4(),
                         type: 'die',
                         stt: amount + 1,
-                        lost: 0
+                        lost: 0,
+                        canWin: 'false'
                     },
                     raw: false
                 });
@@ -8191,7 +8193,8 @@ const themTraLoi = (data) => {
                         id: uuidv4(),
                         type: 'normal',
                         stt: 1,
-                        lost: 0
+                        lost: 0,
+                        canWin: 'false'
                     },
                     raw: false
                 });
@@ -8234,7 +8237,7 @@ const themListEnd = (data) => {
 
                 let listWord = data.listWord ?? []
 
-                 db.TuKetThucs.increment({ lost: 1 }, {
+                db.TuKetThucs.increment({ lost: 1 }, {
                     where: {
                         label: {
                             [Op.in]: listWord
@@ -8446,7 +8449,11 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
     let tuDie = await db.TuKetThucs.findOne({
         where: {
             idTuBatDau: tuBD.id,
-            type: "die",
+            [Op.or]: [
+                {type: "die"},
+                {canWin: 'true'}
+            ],
+            
             label: {
                 [Op.notIn]: listWord
             }
@@ -8455,7 +8462,7 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
     if (tuDie) return tuDie;
 
     // gồm từ warning và normal
-    let tuNormals = await db.TuKetThucs.findOne({
+    let tuNormals = await db.TuKetThucs.findAll({
         where: {
             idTuBatDau: tuBD.id,
             type: "normal",
@@ -8466,12 +8473,46 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
         order: [['lost', 'asc']],
     })
 
-    if (tuNormals) return tuNormals;
+    if (tuNormals) {
+        let tuNormal = tuNormals[0]
+
+        for (let item of tuNormals) {
+
+            let checkNormal = await db.TuKetThucs.findOne({
+                where: {
+                    type: 'normal'
+                },
+                include: [
+                    {
+                        model: db.TuBatDaus,
+                        where: {
+                            label: item.label
+                        }
+                    }
+                ],
+                nest: true,
+                raw: false
+            })
+            if (!checkNormal) {
+                await db.TuKetThucs.update(
+                    {canWin: 'true'},
+                    {
+                        where: {
+                            label: item.label
+                        }
+                    }
+                )
+                tuNormal = item
+                break;
+            }
+        }
+        return tuNormal;
+    }
 
 
 
     // Chỉ có warning
-    let tuWarnings = await db.TuKetThucs.findAll({
+    let tuWarning = await db.TuKetThucs.findOne({
         where: {
             idTuBatDau: tuBD.id,
             type: "warning",
@@ -8481,28 +8522,19 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
         }
     })
 
-    let objWarning = {
-        "data": tuWarnings[0],
-        "count": 0
+    if(tuWarning) {
+        await db.TuKetThucs.update(
+            {canWin: 'true'},
+            {
+                where: {
+                    label: tuBD.label
+                }
+            }
+        )
     }
 
-    for (let item of tuWarnings) {
-        let count = await db.TuKetThucs.count({
-            include: [
-                {
-                    model: db.TuBatDaus,
-                    where: {
-                        label: item.label
-                    }
-                }
-            ]
-        })
-        if (count > objWarning.count) objWarning = {
-            "data": item,
-            "count": count
-        }
-    }
-    return objWarning.data
+    
+    return tuWarning
 
 }
 

@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
             stt: DataTypes.INTEGER,
             type: DataTypes.STRING, //normal, warning, die
             lost: DataTypes.INTEGER,
+            canWin: DataTypes.STRING,
 
         },
         {

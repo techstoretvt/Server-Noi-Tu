@@ -5,10 +5,10 @@ module.exports = {
 
     await queryInterface.addColumn(
       'TuKetThucs',
-      'lost',
+      'canWin',
       {
-          type: Sequelize.INTEGER,
-          defaultValue: 0
+          type: Sequelize.STRING,
+          defaultValue: "false"
       },
   );
   },

@@ -26,6 +26,9 @@ module.exports = {
       lost: {
         type: Sequelize.INTEGER
       },
+      canWin: {
+        type: Sequelize.STRING
+      },
 
 
       createdAt: {

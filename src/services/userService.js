@@ -8435,7 +8435,7 @@ const kiemTraLoaiTu = async (tuVung) => {
 }
 
 
-const chonTuKetThuc = async (tuBatDau, listWord) => {
+const chonTuKetThuc = async (tuBatDau, listWord, allListWord) => {
 
     let [tuBD, created] = await db.TuBatDaus.findOrCreate({
         where: {
@@ -8450,10 +8450,10 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
         where: {
             idTuBatDau: tuBD.id,
             [Op.or]: [
-                {type: "die"},
-                {canWin: 'true'}
+                { type: "die" },
+                { canWin: 'true' }
             ],
-            
+
             label: {
                 [Op.notIn]: listWord
             }
@@ -8470,10 +8470,11 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
                 [Op.notIn]: listWord
             }
         },
-        order: [['lost', 'asc']],
+        order: [['lost', 'desc']],
     })
 
-    if (tuNormals) {
+    if (tuNormals && tuNormals.length !== 0) {
+
         let tuNormal = tuNormals[0]
 
         for (let item of tuNormals) {
@@ -8493,18 +8494,59 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
                 nest: true,
                 raw: false
             })
-            if (!checkNormal) {
-                await db.TuKetThucs.update(
-                    {canWin: 'true'},
+
+            let checkNormal2 = await db.TuKetThucs.findOne({
+                where: {
+                    type: 'normal',
+                    label: {
+                        [Op.ne]: allListWord
+                    }
+                },
+                include: [
                     {
+                        model: db.TuBatDaus,
                         where: {
                             label: item.label
                         }
                     }
-                )
+                ],
+                nest: true,
+                raw: false
+            })
+
+            if (!checkNormal || !checkNormal2) {
+                if (!checkNormal)
+                    await db.TuKetThucs.update(
+                        { canWin: 'true' },
+                        {
+                            where: {
+                                label: item.label
+                            }
+                        }
+                    )
                 tuNormal = item
                 break;
             }
+
+            let checkCanWin = await db.TuKetThucs.findOne({
+                where: {
+                    canWin: 'true'
+                },
+                include: [
+                    {
+                        model: db.TuBatDaus,
+                        where: {
+                            label: item.label
+                        }
+                    }
+                ],
+                nest: true,
+                raw: false
+            })
+
+            if(!checkCanWin) tuNormal = item
+
+
         }
         return tuNormal;
     }
@@ -8522,9 +8564,9 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
         }
     })
 
-    if(tuWarning) {
+    if (tuWarning) {
         await db.TuKetThucs.update(
-            {canWin: 'true'},
+            { canWin: 'true' },
             {
                 where: {
                     label: tuBD.label
@@ -8533,7 +8575,7 @@ const chonTuKetThuc = async (tuBatDau, listWord) => {
         )
     }
 
-    
+
     return tuWarning
 
 }
@@ -8552,11 +8594,12 @@ const timTuGoiY = (data) => {
             } else {
                 data.tuBatDau = data.tuBatDau.toLowerCase()
                 let listWord = data.listWord ?? []
+                let allListWord = data.allListWord ?? []
                 listWord = JSON.parse(listWord)
 
                 // console.log(typeof listWord,listWord)
 
-                let getTuKetThuc = await chonTuKetThuc(data.tuBatDau, listWord);
+                let getTuKetThuc = await chonTuKetThuc(data.tuBatDau, listWord, allListWord);
 
                 if (!getTuKetThuc) {
                     return resolve({

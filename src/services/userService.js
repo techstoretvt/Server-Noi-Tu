@@ -8544,7 +8544,7 @@ const chonTuKetThuc = async (tuBatDau, listWord, allListWord) => {
                 raw: false
             })
 
-            if(!checkCanWin) tuNormal = item
+            if (!checkCanWin) tuNormal = item
 
 
         }
@@ -8586,165 +8586,52 @@ const timTuGoiY = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.tuBatDau) {
-                resolve({
+                return resolve({ // Thêm return ở đây để ngắt hàm ngay lập tức
                     errCode: 1,
                     errMessage: "Missing required parameter!",
                     data,
                 });
-            } else {
-                data.tuBatDau = data.tuBatDau.toLowerCase()
-                let listWord = data.listWord ?? []
-                let allListWord = data.allListWord ?? []
-                listWord = JSON.parse(listWord)
+            }
 
-                // console.log(typeof listWord,listWord)
+            data.tuBatDau = data.tuBatDau.toLowerCase();
+            let allListWord = data.allListWord ?? [];
+            let listWord = data.listWord;
 
-                let getTuKetThuc = await chonTuKetThuc(data.tuBatDau, listWord, allListWord);
-
-                if (!getTuKetThuc) {
-                    return resolve({
-                        errCode: 1,
-                        mess: "not found"
-                    });
-                }
-
-                return resolve({
-                    errCode: 0,
-                    data: getTuKetThuc.label,
-                    type: getTuKetThuc.type
-                });
-
-
-                let [tuBD, created] = await db.TuBatDaus.findOrCreate({
-                    where: {
-                        label: data.tuBatDau
-                    },
-                    defaults: {
-                        id: uuidv4()
-                    },
-                });
-
-                let tuDie = await db.TuKetThucs.findOne({
-                    where: {
-                        idTuBatDau: tuBD.id,
-                        type: 'die',
-                        label: {
-                            [Op.notIn]: data.listWord
-                        }
-                    },
-                    order: [['stt', 'asc']],
-                });
-
-                if (tuDie) {
-                    await db.TuKetThucs.increment(
-                        {
-                            stt: 10
-                        }, {
-                        where: {
-                            id: tuDie.id
-                        }
-                    })
-                    return resolve({
-                        errCode: 0,
-                        data: tuDie.label,
-                        type: tuDie.type
-                    });
-                }
-
-                let tuNormal = await db.TuKetThucs.findOne({
-                    where: {
-                        idTuBatDau: tuBD.id,
-                        type: 'normal',
-                        label: {
-                            [Op.notIn]: data.listWord
-                        }
-                    },
-                    order: [['stt', 'asc']],
-                });
-
-                if (tuNormal) {
-                    await db.TuKetThucs.increment(
-                        {
-                            stt: 10
-                        }, {
-                        where: {
-                            id: tuNormal.id
-                        }
-                    })
-                    return resolve({
-                        errCode: 0,
-                        data: tuNormal.label,
-                        type: tuNormal.type
-                    });
-                }
-
-                let tuWarning = await db.TuKetThucs.findOne({
-                    where: {
-                        idTuBatDau: tuBD.id,
-                        type: 'warning',
-                        label: {
-                            [Op.notIn]: data.listWord
-                        }
-                    },
-                    order: [['stt', 'asc']],
-                });
-
-
-                if (tuWarning) {
-                    // let labelTuDien
-                    // let size = contentJson.length
-                    // for (let i = 0; i < size; i++) {
-                    //     if (data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
-                    //         labelTuDien = contentJson[i].split(' ')[1]
-                    //         contentJson.splice(i, 1)
-                    //         break
-                    //     }
-                    // }
-                    await db.TuKetThucs.increment(
-                        {
-                            stt: 10
-                        }, {
-                        where: {
-                            id: tuWarning.id
-                        }
-                    })
-                    return resolve({
-                        errCode: 0,
-                        data: tuWarning.label,
-                        // dataTuDien: labelTuDien,
-                        type: tuWarning.type,
-                        type2: 'warning'
-                    });
-                }
-
-
-
-                let size = contentJson.length
-                let dataRes
-                for (let i = 0; i < size; i++) {
-                    if (!data.listWord.includes(contentJson[i]) && contentJson[i].split(' ')[0] === data.tuBatDau) {
-                        let label = contentJson[i].split(' ')[1]
-                        contentJson.splice(i, 1)
-                        dataRes = {
-                            errCode: 1,
-                            data: label,
-                            type: "tuDien",
-                            type2: 'tuDien'
-                        };
-                        break
+            // XỬ LÝ LỖI JSON.PARSE:
+            // Kiểm tra nếu listWord đã là Object/Array rồi thì không parse nữa.
+            // Nếu là chuỗi, kiểm tra xem có rỗng không, nếu rỗng hoặc không hợp lệ thì gán thành []
+            if (typeof listWord === 'string') {
+                if (listWord.trim() === "") {
+                    listWord = [];
+                } else {
+                    try {
+                        listWord = JSON.parse(listWord);
+                    } catch (jsonErr) {
+                        // Phòng trường hợp client gửi chuỗi lỗi không đúng định dạng JSON (VD: "abc")
+                        listWord = [];
                     }
                 }
-                if (dataRes) {
-                    return resolve(dataRes)
-                }
+            } else if (!listWord) {
+                // Nếu listWord là null hoặc undefined
+                listWord = [];
+            }
 
+            // Gọi hàm xử lý logic tiếp theo
+            let getTuKetThuc = await chonTuKetThuc(data.tuBatDau, listWord, allListWord);
 
+            if (!getTuKetThuc) {
                 return resolve({
                     errCode: 1,
                     mess: "not found"
                 });
-
             }
+
+            return resolve({
+                errCode: 0,
+                data: getTuKetThuc.label,
+                type: getTuKetThuc.type
+            });
+
         } catch (e) {
             reject(e);
         }

@@ -1,0 +1,11 @@
+(Xóa file word_chain_model.pth và word_chain_model.onnx trước khi bắt đầu)
+
+Bước 1: Chạy file train_ai.py để huấn luyện AI (chọn số vòng)
+
+Bước 2: Chạy file convert.py để chuyển đổi model sang ONNX
+
+
+* Lưu ý:
+- predict.py dùng để test bằng python:  python3 predict.py "học" "[]"
+- vocab.json: file chuyển data sang index cho ai train
+- data_for_ai.json: dữ liệu từ vựng

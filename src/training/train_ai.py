@@ -163,4 +163,4 @@ def train_ai(episodes=5000):
     print("=== ĐÃ HUẤN LUYỆN XONG VÀ LƯU MODEL TẠI word_chain_model.pth ===")
 
 if __name__ == "__main__":
-    train_ai(10000)
+    train_ai(50000)

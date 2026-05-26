@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import Verifier from "email-verifier";
 const { Op, where } = require("sequelize");
 const { exec } = require('child_process');
+const tf = require('@tensorflow/tfjs-node');
+const ort = require('onnxruntime-node');
 import {
     signAccessToken,
     signRefreshToken,
@@ -124,6 +126,29 @@ let verifier_email = new Verifier(process.env.API_KEY_VERIFY_EMAIL, {
     validateDNS: false,
     validateSMTP: true,
 });
+
+// const vocab = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'training', 'vocab.json'), 'utf-8'));
+// const wordDict = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'training', 'data_for_ai.json'), 'utf-8'));
+// const wordToIdx = vocab.word_to_idx;
+// const vocabSize = Object.keys(wordToIdx).length;
+
+// let model;
+// // Nạp bộ não AI Node.js vào bộ nhớ RAM khi server khởi động
+// async function loadBotModel() {
+//     const modelPath = 'file://' + path.join(__dirname, '..', 'training', 'nodejs_bot_model', 'model.json');
+//     model = await tf.loadLayersModel(modelPath);
+//     console.log("=== ĐÃ NẠP BỘ NÃO AI THUẦN NODE.JS SẴN SÀNG CHẠY! ===");
+// }
+// loadBotModel();
+
+// 1. Nạp file từ điển và cấu trúc từ vựng vào RAM khi khởi động server
+const vocab = JSON.parse(fs.readFileSync(path.join(__dirname, '../training/', 'vocab.json'), 'utf-8'));
+const wordDict = JSON.parse(fs.readFileSync(path.join(__dirname, '../training/', 'data_for_ai.json'), 'utf-8'));
+const onnxPath = path.join(__dirname, '../training/', 'word_chain_model.onnx');
+
+const wordToIdx = vocab.word_to_idx;
+
+
 
 const CreateUser = (data, header) => {
     return new Promise(async (resolve, reject) => {
@@ -8639,73 +8664,61 @@ const timTuGoiY = (data) => {
     });
 };
 
-const timTuGoiYV2 = (data) => {
-    // return new Promise(async (resolve, reject) => {
-    //     try {
-    //         // TODO: logic sẽ được bổ sung sau
-    //         await exportDataForPython()
-    //         return resolve({
-    //             errCode: 0,
-    //             mess: 'timTuGoiYV2 - coming soon'
-    //         });
-
-    //     } catch (e) {
-    //         reject(e);
-    //     }
-    // });
-
-    return new Promise((resolve, reject) => {
-        try {
-            if (!data.tuBatDau) {
-                return resolve({ errCode: 1, errMessage: "Missing required parameter!" });
-            }
-
-            const tuBatDauStr = data.tuBatDau.toLowerCase().trim();
-            let listWord = data.listWord || [];
-
-            // Ép listWord thành dạng chuỗi string JSON để truyền vào tham số Python an toàn
-            const listWordString = typeof listWord === 'string' ? listWord : JSON.stringify(listWord);
-
-            // Gọi script Python để chạy mô hình mạng nơ-ron PyTorch
-            // Truyền 2 tham số: từ bắt đầu và mảng từ đã dùng
-            const scriptPath = path.join(__dirname, '..', 'training', 'predict.py');
-
-            exec(`python3 ${scriptPath} "${tuBatDauStr}" '${listWordString}'`, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Lỗi thực thi Python: ${error}`);
-                    return reject(error);
-                }
-
-                // Lấy kết quả trả ra từ lệnh print() của Python và xử lý khoảng trắng thừa
-                const result = stdout.trim();
-
-                if (result === "NOT_FOUND") {
-                    return resolve({
-                        errCode: 1,
-                        mess: "Từ này nằm ngoài vùng nhận thức của mạng nơ-ron AI!"
-                    });
-                }
-
-                if (result === "BOT_LOSE") {
-                    return resolve({
-                        errCode: 1,
-                        mess: "AI nhận thấy mọi nước đi tiếp theo đều dẫn tới cửa tử => Bot nhận thua!"
-                    });
-                }
-
-                // Trả về từ kết thúc thông minh nhất do AI PyTorch lựa chọn
-                return resolve({
-                    errCode: 0,
-                    data: result, // Trả ra ví dụ: "sinh"
-                    type: "AI_MODEL_DQN"
-                });
-            });
-
-        } catch (e) {
-            reject(e);
+const timTuGoiYV2 = async (data) => {
+    try {
+        if (!data.tuBatDau) {
+            return { errCode: 1, errMessage: "Missing parameter!" };
         }
-    });
+
+        const tuBatDauStr = data.tuBatDau.toLowerCase().trim();
+        let listWordDaDung = data.listWord || [];
+        if (typeof listWordDaDung === 'string') {
+            listWordDaDung = JSON.parse(listWordDaDung);
+        }
+
+        // Kiểm tra xem từ này AI có biết không
+        if (wordToIdx[tuBatDauStr] === undefined || !wordDict[tuBatDauStr]) {
+            return { errCode: 1, mess: "Từ này nằm ngoài vùng nhận thức của AI!" };
+        }
+
+        // Lọc ra các từ đi tiếp hợp lệ và chưa được dùng trong trận đấu
+        let validNextWords = wordDict[tuBatDauStr].filter(w =>
+            !listWordDaDung.includes(`${tuBatDauStr} ${w}`) && wordToIdx[w] !== undefined
+        );
+
+        if (validNextWords.length === 0) {
+            return { errCode: 1, mess: "AI nhận thua!" };
+        }
+
+        // --- 🧠 2. KÍCH HOẠT MẠNG NƠ-RON BẰNG ONNX RUNTIME (SIÊU NHẸ RAM) ---
+        // Nạp "bộ não" ONNX vào phiên làm việc
+        const session = await ort.InferenceSession.create(onnxPath);
+
+        // Chuẩn bị dữ liệu đầu vào (Đổi ID của từ hiện tại sang kiểu BigInt64 theo đúng chuẩn ONNX)
+        const currentIdx = wordToIdx[tuBatDauStr];
+        const inputTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(currentIdx)]), [1]);
+
+        // Cho mạng nơ-ron chạy để chấm điểm Q-values cho tất cả các từ trong hệ thống
+        const results = await session.run({ input: inputTensor });
+        const qValues = results.output.data; // Mảng chứa điểm số của toàn bộ từ vựng
+
+        // --- 🎯 3. SẮP XẾP CHỌN NƯỚC ĐI HIỂM NHẤT ---
+        // Từ nào được mạng nơ-ron chấm điểm cao hơn sẽ xếp lên đầu
+        validNextWords.sort((wordA, wordB) => qValues[wordToIdx[wordB]] - qValues[wordToIdx[wordA]]);
+        const nuocDiBest = validNextWords[0];
+
+        return {
+            errCode: 0,
+            data: nuocDiBest,
+            type: "AI_MODEL_NODEJS_ONNX"
+        };
+
+    } catch (e) {
+        // Sửa lỗi ở đây: Trả về object chứa thông báo lỗi thay vì gọi res.status
+        return { errCode: -1, errMessage: e.message };
+    }
 };
+
 
 const exportDataForPython = async () => {
     // Lấy tất cả từ bắt đầu và các từ kết thúc của chúng

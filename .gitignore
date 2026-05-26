@@ -5,3 +5,7 @@
 .env
 /src/public/videoTam/*.mp4
 /build
+.venv/
+venv/
+__pycache__/
+*.pyc

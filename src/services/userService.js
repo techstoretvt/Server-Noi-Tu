@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import Verifier from "email-verifier";
 const { Op, where } = require("sequelize");
+const { exec } = require('child_process');
 import {
     signAccessToken,
     signRefreshToken,
@@ -8638,6 +8639,127 @@ const timTuGoiY = (data) => {
     });
 };
 
+const timTuGoiYV2 = (data) => {
+    // return new Promise(async (resolve, reject) => {
+    //     try {
+    //         // TODO: logic sẽ được bổ sung sau
+    //         await exportDataForPython()
+    //         return resolve({
+    //             errCode: 0,
+    //             mess: 'timTuGoiYV2 - coming soon'
+    //         });
+
+    //     } catch (e) {
+    //         reject(e);
+    //     }
+    // });
+
+    return new Promise((resolve, reject) => {
+        try {
+            if (!data.tuBatDau) {
+                return resolve({ errCode: 1, errMessage: "Missing required parameter!" });
+            }
+
+            const tuBatDauStr = data.tuBatDau.toLowerCase().trim();
+            let listWord = data.listWord || [];
+
+            // Ép listWord thành dạng chuỗi string JSON để truyền vào tham số Python an toàn
+            const listWordString = typeof listWord === 'string' ? listWord : JSON.stringify(listWord);
+
+            // Gọi script Python để chạy mô hình mạng nơ-ron PyTorch
+            // Truyền 2 tham số: từ bắt đầu và mảng từ đã dùng
+            const scriptPath = path.join(__dirname, '..', 'training', 'predict.py');
+
+            exec(`python3 ${scriptPath} "${tuBatDauStr}" '${listWordString}'`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Lỗi thực thi Python: ${error}`);
+                    return reject(error);
+                }
+
+                // Lấy kết quả trả ra từ lệnh print() của Python và xử lý khoảng trắng thừa
+                const result = stdout.trim();
+
+                if (result === "NOT_FOUND") {
+                    return resolve({
+                        errCode: 1,
+                        mess: "Từ này nằm ngoài vùng nhận thức của mạng nơ-ron AI!"
+                    });
+                }
+
+                if (result === "BOT_LOSE") {
+                    return resolve({
+                        errCode: 1,
+                        mess: "AI nhận thấy mọi nước đi tiếp theo đều dẫn tới cửa tử => Bot nhận thua!"
+                    });
+                }
+
+                // Trả về từ kết thúc thông minh nhất do AI PyTorch lựa chọn
+                return resolve({
+                    errCode: 0,
+                    data: result, // Trả ra ví dụ: "sinh"
+                    type: "AI_MODEL_DQN"
+                });
+            });
+
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const exportDataForPython = async () => {
+    // Lấy tất cả từ bắt đầu và các từ kết thúc của chúng
+    const tatCaTuBatDau = await db.TuBatDaus.findAll({ raw: true });
+    const tongSo = tatCaTuBatDau.length;
+    let soThuTu = 0;
+    let soTuHopLe = 0;
+    const thoiGianBatDau = Date.now();
+
+    console.log(`\n========== BẮT ĐẦU XUẤT DỮ LIỆU ==========`);
+    console.log(`Tổng số từ bắt đầu cần xử lý: ${tongSo}`);
+    console.log(`=============================================\n`);
+
+    let dictionary = {};
+
+    for (let tu of tatCaTuBatDau) {
+        soThuTu++;
+        const labelBatDau = tu.label.toLowerCase();
+
+        // Tìm các từ kết thúc liên kết qua khóa ngoại idTuBatDau
+        const cacTuKetThuc = await db.TuKetThucs.findAll({
+            where: { idTuBatDau: tu.id },
+            raw: true
+        });
+
+        // Chỉ lấy những label hợp lệ
+        const listKetThuc = cacTuKetThuc.map(item => item.label.toLowerCase());
+
+        if (listKetThuc.length > 0) {
+            dictionary[labelBatDau] = listKetThuc;
+            soTuHopLe++;
+        }
+
+        // Hiển thị tiến độ mỗi 100 từ hoặc khi hoàn thành
+        if (soThuTu % 100 === 0 || soThuTu === tongSo) {
+            const phanTram = ((soThuTu / tongSo) * 100).toFixed(1);
+            const thoiGianDaChay = ((Date.now() - thoiGianBatDau) / 1000).toFixed(1);
+            const tocDo = (soThuTu / ((Date.now() - thoiGianBatDau) / 1000)).toFixed(0);
+            const conLai = (((tongSo - soThuTu) / tocDo)).toFixed(0);
+            console.log(`[${phanTram}%] ${soThuTu}/${tongSo} | Hợp lệ: ${soTuHopLe} | Thời gian: ${thoiGianDaChay}s | Tốc độ: ${tocDo} từ/s | Còn lại: ~${conLai}s`);
+        }
+    }
+
+    // Ghi ra file JSON sạch
+    fs.writeFileSync('./data_for_ai.json', JSON.stringify(dictionary, null, 2), 'utf-8');
+    const tongThoiGian = ((Date.now() - thoiGianBatDau) / 1000).toFixed(1);
+    console.log(`\n========== HOÀN THÀNH ==========`);
+    console.log(`Tổng từ bắt đầu: ${tongSo}`);
+    console.log(`Từ hợp lệ (có từ kết thúc): ${soTuHopLe}`);
+    console.log(`Tổng thời gian: ${tongThoiGian}s`);
+    console.log(`File: data_for_ai.json`);
+    console.log(`================================\n`);
+};
+
 const listTuKetThuc = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -9201,6 +9323,7 @@ module.exports = {
     themTuDie,
     themTraLoi,
     timTuGoiY,
+    timTuGoiYV2,
     xoaTu,
     updateTuDien,
     trainingData,

@@ -650,6 +650,11 @@ const initUserRoute = (app) => {
     );
 
     router.get(
+        "/tim-tu-goi-y-v2",
+        userController.timTuGoiYV2
+    );
+
+    router.get(
         "/update-tu-dien",
         userController.updateTuDien
     );

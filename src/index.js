@@ -1,3 +1,6 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 import express from 'express';
 require('dotenv').config();
 import bodyParser from 'body-parser';
@@ -8,8 +11,7 @@ const cookieParser = require('cookie-parser');
 const { ApolloServer } = require('apollo-server-express');
 const createError = require('http-errors');
 const logEvents = require('./helpers/logEvents');
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
+
 
 import configViewEngine from './config/viewEngine';
 // import initAppRoute from './route/appRoute';

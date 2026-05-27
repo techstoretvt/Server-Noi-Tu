@@ -8671,11 +8671,11 @@ const timTuGoiYV2 = async (data) => {
         }
 
         const tuBatDauStr = data.tuBatDau.toLowerCase().trim();
-        let listWordDaDung = data.listWord || [];
+        let listWordDaDung = data.listWord ?? [];
+
         if (typeof listWordDaDung === 'string') {
             listWordDaDung = JSON.parse(listWordDaDung);
         }
-
         // Kiểm tra xem từ này AI có biết không
         if (wordToIdx[tuBatDauStr] === undefined || !wordDict[tuBatDauStr]) {
             return { errCode: 1, mess: "Từ này nằm ngoài vùng nhận thức của AI!" };
@@ -8683,7 +8683,7 @@ const timTuGoiYV2 = async (data) => {
 
         // Lọc ra các từ đi tiếp hợp lệ và chưa được dùng trong trận đấu
         let validNextWords = wordDict[tuBatDauStr].filter(w =>
-            !listWordDaDung.includes(`${tuBatDauStr} ${w}`) && wordToIdx[w] !== undefined
+            !listWordDaDung.includes(`${w}`) && wordToIdx[w] !== undefined
         );
 
         if (validNextWords.length === 0) {

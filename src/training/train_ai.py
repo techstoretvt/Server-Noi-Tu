@@ -10,7 +10,7 @@ import numpy as np
 with open('data_for_ai.json', 'r', encoding='utf-8') as f:
     word_dict = json.load(f)
 
-# Tạo danh bạ từ vựng (Vocabulary mapping) từ tất cả các từ có mặt trong file dữ liệu
+# Tạo danh bạ từ vựng từ tất cả các từ có mặt trong file dữ liệu
 all_words = sorted(list(set(list(word_dict.keys()) + [item for sublist in word_dict.values() for item in sublist])))
 vocab_size = len(all_words)
 
@@ -21,16 +21,18 @@ idx_to_word = {idx: word for idx, word in enumerate(all_words)}
 with open('vocab.json', 'w', encoding='utf-8') as f:
     json.dump({"word_to_idx": word_to_idx, "idx_to_word": idx_to_word}, f, ensure_ascii=False, indent=2)
 
+# === ĐÃ SỬA: Cấu hình thiết bị chạy GPU (Tối ưu cho Mac M1/M2/M3 hoặc Card NVIDIA) ===
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
+print(f"🚀 AI ĐANG CHẠY TRÊN THIẾT BỊ: {device}")
+
 # 2. Định nghĩa Mạng Nơ-ron Sâu (Deep Q-Network) bằng PyTorch
 class DQN(nn.Module):
     def __init__(self, vocab_size):
         super(DQN, self).__init__()
-        # Lớp nhúng từ (Embedding) biến ID thành Vector 64 chiều lý giải ngữ nghĩa
         self.embedding = nn.Embedding(vocab_size, 64)
-        # Các lớp nơ-ron liên kết (Dense Layers)
         self.fc1 = nn.Linear(64, 128)
         self.fc2 = nn.Linear(128, 64)
-        self.output_layer = nn.Linear(64, vocab_size) # Đầu ra là điểm số của tất cả các từ trong từ điển
+        self.output_layer = nn.Linear(64, vocab_size)
 
     def forward(self, x):
         x = self.embedding(x)
@@ -38,61 +40,61 @@ class DQN(nn.Module):
         x = torch.relu(self.fc2(x))
         return self.output_layer(x)
 
-# Khởi tạo mô hình mạng nơ-ron
-model = DQN(vocab_size)
-# ------------ ĐOẠN SỬA ĐỂ HỌC NỐI TIẾP ------------
+# Khởi tạo mô hình mạng nơ-ron và đẩy lên GPU liền
+model = DQN(vocab_size).to(device)
+
 if os.path.exists('word_chain_model.pth'):
     print("=== TÌM THẤY BỘ NÃO CŨ! AI ĐANG NẠP LẠI KINH NGHIỆM ĐỂ HỌC TIẾP... ===")
-    model.load_state_dict(torch.load('word_chain_model.pth'))
+    # Thêm map_location để nạp an toàn giữa CPU và GPU
+    model.load_state_dict(torch.load('word_chain_model.pth', map_location=device))
 else:
     print("=== KHÔNG CÓ FILE CŨ, AI SẼ HỌC LẠI TỪ ĐẦU (RESET) ===")
-# --------------------------------------------------
 
-optimizer = optim.Adam(model.parameters(), lr=0.0005)
+# === ĐÃ SỬA: Giảm tốc độ học (Learning Rate) xuống cực thấp để tinh chỉnh bộ não cũ, không làm sập Loss về 0 ===
+optimizer = optim.Adam(model.parameters(), lr=0.00001)
 loss_fn = nn.HuberLoss()
 
-
-
 # 3. Quá trình Tự đấu (Self-Play Simulation) và Tự học
-def train_ai(episodes=5000):
-    gamma = 0.9
-    epsilon = 0.1 # 10% đi ngẫu nhiên để học nước cờ độc lạ
+def train_ai(episodes=500000):
+    gamma = 0.97
+    
+    # === ĐÃ SỬA: Chỉnh lại Epsilon dốc giảm chậm để ép AI liên tục tìm nước đi độc lạ, phá thế đóng băng Loss ===
+    epsilon_start = 0.50  # Bắt đầu với 50% đi ngẫu nhiên để mở rộng vốn chiến thuật
+    epsilon_min = 0.05    # Giữ tối thiểu 5% ngẫu nhiên để không bị lặp đi lặp lại một trận đấu bài học
+    epsilon_decay = 0.99995 # Giảm từ từ sau hàng trăm ngàn ván
+    epsilon = epsilon_start
     
     print(f"=== Bắt đầu huấn luyện AI thông qua {episodes} ván đấu tự chơi ===")
     
     for episode in range(1, episodes + 1):
-        list_word_da_dung = []
-        history = [] # Lưu lịch sử ván đấu để tính Loss
+        history = []
         
-        # Chọn ngẫu nhiên 1 từ bắt đầu có trong dữ liệu gốc
         current_word = random.choice(list(word_dict.keys()))
+        list_word_da_dung = [current_word]
         
-        turn = 1 # 1: Bot A, 2: Bot B
+        turn = 1
         game_over = False
         winner = 0
         
         while not game_over:
             current_idx = word_to_idx[current_word]
             
-            # AI dự đoán điểm số của tất cả các từ đi tiếp
+            # === ĐÃ SỬA: Đẩy input lên GPU, chạy xong đẩy về CPU để lấy mảng numpy (Fix lỗi sập dòng 81) ===
             model.eval()
+            input_tensor = torch.tensor([current_idx], dtype=torch.long).to(device)
             with torch.no_grad():
-                q_values = model(torch.tensor([current_idx])).numpy()[0]
+                q_values = model(input_tensor).cpu().numpy()[0]
             
-            # Lấy các từ nối hợp lệ từ dữ liệu gốc
             valid_next_words = word_dict.get(current_word, [])
-            # Lọc bỏ từ trùng
-            valid_next_words = [w for w in valid_next_words if f"{current_word} {w}" not in list_word_da_dung and w in word_to_idx]
+            valid_next_words = [w for w in valid_next_words if w not in list_word_da_dung and w in word_to_idx]
             
             if not valid_next_words:
                 winner = 2 if turn == 1 else 1
                 game_over = True
             else:
-                # Epsilon-Greedy chọn nước đi
                 if random.random() < epsilon:
                     chosen_word = random.choice(valid_next_words)
                 else:
-                    # Chọn từ có điểm số DQN dự đoán cao nhất
                     valid_next_words.sort(key=lambda w: q_values[word_to_idx[w]], reverse=True)
                     chosen_word = valid_next_words[0]
                 
@@ -102,17 +104,17 @@ def train_ai(episodes=5000):
                     "state": current_idx,
                     "action": next_idx,
                     "player": turn,
-                    "q_values": q_values.copy()
+                    "q_values": q_values.copy(),
+                    "word_used": chosen_word # Lưu lại từ để tính toán phần thưởng động
                 })
                 
-                list_word_da_dung.append(f"{current_word} {chosen_word}")
+                list_word_da_dung.append(chosen_word)
                 current_word = chosen_word
                 turn = 2 if turn == 1 else 1
                 
-            if len(history) > 40: # Quá dài -> Ép Hòa
+            if len(history) > 60:
                 game_over = True
                 
-        # Cập nhật thuật toán Lan truyền ngược (Backpropagation) để tối ưu các trọng số mạng nơ-ron
         if winner != 0 and len(history) > 0:
             model.train()
             inputs = []
@@ -121,46 +123,67 @@ def train_ai(episodes=5000):
             for i in reversed(range(len(history))):
                 step = history[i]
                 is_winner = (step["player"] == winner)
-                reward = 1.0 if is_winner else -1.0
+                
+                # === ĐÃ SỬA: THIẾT KẾ LẠI PHẦN THƯỞNG ĐỘNG (REWARD SHAPING) ===
+                # Thay vì thưởng cứng 1 và -1, ta thưởng phạt dựa trên độ hiểm của nước đi
+                if is_winner:
+                    # Kiểm tra xem từ AI chọn đi tiếp còn bao nhiêu từ chặn hậu đối thủ
+                    words_left_for_enemy = word_dict.get(step["word_used"], [])
+                    words_left_for_enemy = [w for w in words_left_for_enemy if w not in list_word_da_dung]
+                    
+                    if len(words_left_for_enemy) == 0:
+                        reward = 5.0  # Thưởng cực lớn nếu đi từ "cụt" kết liễu trận đấu!
+                    else:
+                        reward = 1.0 + (1.0 / (len(words_left_for_enemy) + 1)) # Thưởng nhiều hơn nếu chặn bớt đường đi của địch
+                else:
+                    reward = -1.0 # Phạt khi thua ván đấu
+                # =============================================================
                 
                 target_q = step["q_values"]
                 
                 max_future_q = 0
                 if i < len(history) - 1:
                     next_state = history[i+1]["state"]
+                    # === ĐÃ SỬA: Đẩy dữ liệu trạng thái tương lai lên GPU khớp cấu hình ===
+                    next_input = torch.tensor([next_state], dtype=torch.long).to(device)
                     with torch.no_grad():
-                        next_q = model(torch.tensor([next_state])).numpy()[0]
+                        next_q = model(next_input).cpu().numpy()[0]
                     max_future_q = np.max(next_q)
                 
-                # Công thức cập nhật Bellman Equation
                 target_q[step["action"]] = reward + gamma * max_future_q
-                # CHÈN THÊM DÒNG NÀY NGAY PHÍA DƯỚI NÓ:
-                # Giới hạn điểm số tối đa là 10, tối thiểu là -10 để ma trận nơ-ron không bị phình to
                 target_q[step["action"]] = np.clip(target_q[step["action"]], -10.0, 10.0)
                 
                 inputs.append(step["state"])
                 targets.append(target_q)
                 
-            # Đưa vào huấn luyện mạng nơ-ron bằng PyTorch
             optimizer.zero_grad()
-            inputs_tensor = torch.tensor(inputs)
-            targets_tensor = torch.tensor(targets, dtype=torch.float32)
+            # === ĐÃ SỬA: Đẩy toàn bộ dữ liệu Tensor huấn luyện lên GPU (Cực kỳ quan trọng) ===
+            inputs_tensor = torch.tensor(inputs, dtype=torch.long).to(device)
+            targets_tensor = torch.tensor(targets, dtype=torch.float32).to(device)
             
             outputs = model(inputs_tensor)
             loss = loss_fn(outputs, targets_tensor)
             loss.backward()
-            # --- CHÈN THÊM DÒNG NÀY VÀO ĐÂY ---
-            # Giới hạn không cho phép ma trận trọng số biến thiên vượt quá ngưỡng 1.0
+            
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            # ----------------------------------
             optimizer.step()
             
-        if episode % 500 == 0:
-            print(f"Ván: {episode}/{episodes} | Độ lỗi mạng nơ-ron (Loss): {loss.item():.4f}")
+        # Hạ mức độ ngẫu nhiên xuống theo thời gian ván đấu
+        if epsilon > epsilon_min:
+            epsilon *= epsilon_decay
 
-    # Lưu file model cứng (.pth) độc lập hoàn toàn khỏi DB
+        if episode % 500 == 0:
+            # Lấy giá trị loss ra hiển thị trên CPU màn hình
+            print(f"Ván: {episode}/{episodes} | Lượng Loss: {loss.item():.6f} | Tỷ lệ ngẫu nhiên (Epsilon): {epsilon:.4f}")
+
+        # Mẹo: Cứ sau 50,000 ván tự động lưu backup phòng khi mất điện
+        if episode % 50000 == 0:
+            torch.save(model.state_dict(), 'word_chain_model.pth')
+            print(f"💾 Đã lưu tiến trình tự động tại ván {episode}...")
+
+    # Lưu file model cứng kết quả cuối cùng
     torch.save(model.state_dict(), 'word_chain_model.pth')
     print("=== ĐÃ HUẤN LUYỆN XONG VÀ LƯU MODEL TẠI word_chain_model.pth ===")
 
 if __name__ == "__main__":
-    train_ai(50000)
+    train_ai(500000)

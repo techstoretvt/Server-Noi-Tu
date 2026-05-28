@@ -61,7 +61,7 @@ def train_ai(episodes=500000):
     # === ĐÃ SỬA: Chỉnh lại Epsilon dốc giảm chậm để ép AI liên tục tìm nước đi độc lạ, phá thế đóng băng Loss ===
     epsilon_start = 0.50  # Bắt đầu với 50% đi ngẫu nhiên để mở rộng vốn chiến thuật
     epsilon_min = 0.05    # Giữ tối thiểu 5% ngẫu nhiên để không bị lặp đi lặp lại một trận đấu bài học
-    epsilon_decay = 0.99995 # Giảm từ từ sau hàng trăm ngàn ván
+    epsilon_decay = 0.9999995 # Giảm từ từ sau hàng trăm ngàn ván
     epsilon = epsilon_start
     
     print(f"=== Bắt đầu huấn luyện AI thông qua {episodes} ván đấu tự chơi ===")
@@ -174,7 +174,7 @@ def train_ai(episodes=500000):
 
         if episode % 500 == 0:
             # Lấy giá trị loss ra hiển thị trên CPU màn hình
-            print(f"Ván: {episode}/{episodes} | Lượng Loss: {loss.item():.6f} | Tỷ lệ ngẫu nhiên (Epsilon): {epsilon:.4f}")
+            print(f"Ván: {episode}/{episodes} | Lượng Loss: {loss.item():.10f} | Tỷ lệ ngẫu nhiên (Epsilon): {epsilon:.4f}")
 
         # Mẹo: Cứ sau 50,000 ván tự động lưu backup phòng khi mất điện
         if episode % 50000 == 0:
@@ -186,4 +186,4 @@ def train_ai(episodes=500000):
     print("=== ĐÃ HUẤN LUYỆN XONG VÀ LƯU MODEL TẠI word_chain_model.pth ===")
 
 if __name__ == "__main__":
-    train_ai(500000)
+    train_ai(200000)
